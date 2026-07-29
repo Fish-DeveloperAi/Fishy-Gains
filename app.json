@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "voiceshift-gym-app-v2",
-    "slug": "voiceshift-gym-app-v2",
+    "name": "Fishy Gains",
+    "slug": "Fishy-Gains",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {

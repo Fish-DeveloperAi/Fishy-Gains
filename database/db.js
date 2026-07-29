@@ -28,6 +28,26 @@ export function initDatabase() {
       FOREIGN KEY (workout_id) REFERENCES workouts (id),
       FOREIGN KEY (exercise_id) REFERENCES exercises (id)
     );
+    CREATE TABLE IF NOT EXISTS routines (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS routine_exercises (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      routine_id INTEGER,
+      exercise_id INTEGER,
+      exercise_order INTEGER,
+      FOREIGN KEY (routine_id) REFERENCES routines (id),
+      FOREIGN KEY (exercise_id) REFERENCES exercises (id)
+    );
+    CREATE TABLE IF NOT EXISTS body_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  date TEXT NOT NULL,
+  weight REAL,
+  chest REAL,
+  waist REAL,
+  arms REAL
+    );
   `);
 }
 
@@ -128,6 +148,84 @@ export function getBestSetForExercise(exerciseId) {
     `SELECT weight, reps FROM sets WHERE exercise_id = ? ORDER BY weight DESC LIMIT 1`,
     [exerciseId]
   );
+  
+}
+export function addCustomExercise(name, category, equipment, primaryMuscle) {
+  const result = db.runSync(
+    `INSERT INTO exercises (external_id, name, category, equipment, primary_muscle, instructions, image_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [null, name, category || 'strength', equipment || 'other', primaryMuscle || 'other', null, null]
+  );
+  return result.lastInsertRowId;
+}
+export function resetExercises() {
+  db.execSync('DROP TABLE IF EXISTS exercises;');
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS exercises (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      external_id TEXT,
+      name TEXT NOT NULL,
+      category TEXT,
+      equipment TEXT,
+      primary_muscle TEXT,
+      instructions TEXT,
+      image_url TEXT
+    );
+  `);
+}
+export function getVolumeForWorkout(workoutId) {
+  const result = db.getFirstSync(
+    `SELECT SUM(weight * reps) as totalVolume, COUNT(*) as totalSets
+     FROM sets
+     WHERE workout_id = ?`,
+    [workoutId]
+  );
+  return {
+    totalVolume: result.totalVolume || 0,
+    totalSets: result.totalSets || 0,
+  };
+}
+export function getAllRoutines() {
+  return db.getAllSync('SELECT * FROM routines ORDER BY id DESC');
+}
+
+export function createRoutine(name) {
+  const result = db.runSync('INSERT INTO routines (name) VALUES (?)', [name]);
+  return result.lastInsertRowId;
+}
+
+export function addExerciseToRoutine(routineId, exerciseId, order) {
+  db.runSync(
+    'INSERT INTO routine_exercises (routine_id, exercise_id, exercise_order) VALUES (?, ?, ?)',
+    [routineId, exerciseId, order]
+  );
+}
+
+export function getExercisesForRoutine(routineId) {
+  return db.getAllSync(
+    `SELECT exercises.* FROM routine_exercises
+     JOIN exercises ON routine_exercises.exercise_id = exercises.id
+     WHERE routine_exercises.routine_id = ?
+     ORDER BY routine_exercises.exercise_order ASC`,
+    [routineId]
+  );
+}
+
+export function deleteRoutine(routineId) {
+  db.execSync(`DELETE FROM routine_exercises WHERE routine_id = ${routineId};`);
+  db.execSync(`DELETE FROM routines WHERE id = ${routineId};`);
+}
+
+export function addBodyLog(weight, chest, waist, arms) {
+  const today = new Date().toISOString().split('T')[0];
+  db.runSync(
+    'INSERT INTO body_logs (date, weight, chest, waist, arms) VALUES (?, ?, ?, ?, ?)',
+    [today, weight || null, chest || null, waist || null, arms || null]
+  );
+}
+
+export function getAllBodyLogs() {
+  return db.getAllSync('SELECT * FROM body_logs ORDER BY date ASC');
 }
 
 export default db;

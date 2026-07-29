@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { createWorkout, getAllWorkouts, getExercisesForWorkout } from '../database/db';
+import { createWorkout, getAllWorkouts, getExercisesForWorkout, getVolumeForWorkout } from '../database/db';
 
 export default function HomeScreen({ navigation }) {
   const [workouts, setWorkouts] = useState([]);
@@ -14,12 +14,13 @@ export default function HomeScreen({ navigation }) {
 
   function loadWorkouts() {
   const allWorkouts = getAllWorkouts();
-  const withExercises = allWorkouts.map((w) => ({
+  const withDetails = allWorkouts.map((w) => ({
     ...w,
     exercises: getExercisesForWorkout(w.id),
+    volume: getVolumeForWorkout(w.id),
   }));
-  setWorkouts(withExercises);
-} 
+  setWorkouts(withDetails);
+}
 
   function handleStartWorkout() {
     const workoutId = createWorkout();
@@ -32,7 +33,18 @@ export default function HomeScreen({ navigation }) {
       <TouchableOpacity style={styles.button} onPress={handleStartWorkout}>
         <Text style={styles.buttonText}>+ Start New Workout</Text>
       </TouchableOpacity>
-
+    <TouchableOpacity
+   style={styles.secondaryButton}
+  onPress={() => navigation.navigate('Routines')}
+  >
+  <Text style={styles.secondaryButtonText}>My Routines</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={styles.secondaryButton}
+      onPress={() => navigation.navigate('BodyLog')}
+    >
+      <Text style={styles.secondaryButtonText}>Body Log</Text>
+    </TouchableOpacity>
       <FlatList
         style={{ marginTop: 24 }}
         data={workouts}
@@ -40,6 +52,9 @@ export default function HomeScreen({ navigation }) {
         renderItem={({ item }) => (
   <View style={styles.workoutCard}>
     <Text style={styles.workoutDate}>{item.date}</Text>
+    <Text style={styles.volumeText}>
+      {item.volume.totalSets} sets · {item.volume.totalVolume.toLocaleString()}kg total volume
+    </Text>
     <View style={styles.chipRow}>
       {item.exercises.length === 0 ? (
         <Text style={styles.workoutExercises}>No exercises logged</Text>
@@ -82,4 +97,15 @@ const styles = StyleSheet.create({
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   chip: { backgroundColor: '#000', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
   chipText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+  volumeText: { fontSize: 13, color: '#555', marginTop: 4 },
+ secondaryButton: {
+  backgroundColor: '#fff',
+  padding: 16,
+  borderRadius: 10,
+  alignItems: 'center',
+  marginTop: 10,
+  borderWidth: 2,
+  borderColor: '#000',
+},
+secondaryButtonText: { fontWeight: '700', fontSize: 15, color: '#000' },
 });
