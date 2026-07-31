@@ -320,7 +320,7 @@ Exercise information is provided by **free-exercise-db**, released under the **U
 
 GitHub: https://github.com/Fish-DeveloperAi
 
-[aminebakhda1@gmail.com](mailto:aminebakhda1@gmail.com)
+Mail: [aminebakhda1@gmail.com](mailto:aminebakhda1@gmail.com)
 
 ---
 
@@ -328,7 +328,7 @@ GitHub: https://github.com/Fish-DeveloperAi
 
 GitHub: https://github.com/TheDeadShadow47
 
-[aymenhakkaoui41@gmail.com](mailto:aymenhakkaoui41@gmail.com)
+Mail: [aymenhakkaoui41@gmail.com](mailto:aymenhakkaoui41@gmail.com)
 
 ---
 
