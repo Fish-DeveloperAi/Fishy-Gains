@@ -41,12 +41,12 @@ export function initDatabase() {
       FOREIGN KEY (exercise_id) REFERENCES exercises (id)
     );
     CREATE TABLE IF NOT EXISTS body_logs (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  date TEXT NOT NULL,
-  weight REAL,
-  chest REAL,
-  waist REAL,
-  arms REAL
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      weight REAL,
+      chest REAL,
+      waist REAL,
+      arms REAL
     );
   `);
 }
@@ -137,8 +137,8 @@ export function getHistoryForExercise(exerciseId) {
     [exerciseId]
   );
 }
+
 export function estimate1RM(weight, reps) {
-  // Epley formula
   if (reps === 1) return weight;
   return Math.round(weight * (1 + reps / 30) * 10) / 10;
 }
@@ -148,8 +148,8 @@ export function getBestSetForExercise(exerciseId) {
     `SELECT weight, reps FROM sets WHERE exercise_id = ? ORDER BY weight DESC LIMIT 1`,
     [exerciseId]
   );
-  
 }
+
 export function addCustomExercise(name, category, equipment, primaryMuscle) {
   const result = db.runSync(
     `INSERT INTO exercises (external_id, name, category, equipment, primary_muscle, instructions, image_url)
@@ -158,6 +158,7 @@ export function addCustomExercise(name, category, equipment, primaryMuscle) {
   );
   return result.lastInsertRowId;
 }
+
 export function resetExercises() {
   db.execSync('DROP TABLE IF EXISTS exercises;');
   db.execSync(`
@@ -173,6 +174,7 @@ export function resetExercises() {
     );
   `);
 }
+
 export function getVolumeForWorkout(workoutId) {
   const result = db.getFirstSync(
     `SELECT SUM(weight * reps) as totalVolume, COUNT(*) as totalSets
@@ -185,6 +187,7 @@ export function getVolumeForWorkout(workoutId) {
     totalSets: result.totalSets || 0,
   };
 }
+
 export function getAllRoutines() {
   return db.getAllSync('SELECT * FROM routines ORDER BY id DESC');
 }
@@ -226,6 +229,27 @@ export function addBodyLog(weight, chest, waist, arms) {
 
 export function getAllBodyLogs() {
   return db.getAllSync('SELECT * FROM body_logs ORDER BY date ASC');
+}
+
+// --- NEW FUNCTION TO GENERATE SHAREABLE CARD DATA ---
+export function getWorkoutSummary(workoutId) {
+  const result = db.getFirstSync(
+    `SELECT 
+       SUM(weight * reps) as totalVolume, 
+       COUNT(DISTINCT exercise_id) as exercisesCompleted
+     FROM sets 
+     WHERE workout_id = ?`,
+    [workoutId]
+  );
+
+  const workout = db.getFirstSync(`SELECT date FROM workouts WHERE id = ?`, [workoutId]);
+
+  return {
+    title: 'Workout Summary', // Add a 'title' column to workouts table in the future if you want custom names
+    totalVolumeKg: result.totalVolume || 0,
+    exercisesCompleted: result.exercisesCompleted || 0,
+    date: workout ? workout.date : new Date().toLocaleDateString()
+  };
 }
 
 export default db;
