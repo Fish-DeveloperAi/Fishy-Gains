@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
+const PALETTE = {
+  background: '#0B1D3A',
+  surface: '#162C54',
+  accent: '#00D2D3',
+  textMain: '#F8FAFC',
+  textMuted: '#94A3B8',
+  border: '#2A4374',
+};
+
 export default function RestTimer({ duration = 90, active, onFinish }) {
   const [secondsLeft, setSecondsLeft] = useState(duration);
   const intervalRef = useRef(null);
@@ -46,14 +55,36 @@ export default function RestTimer({ duration = 90, active, onFinish }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000',
-    borderRadius: 12,
+    backgroundColor: PALETTE.surface,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     marginTop: 16,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
   },
-  label: { color: '#aaa', fontSize: 13 },
-  timer: { color: '#fff', fontSize: 36, fontWeight: 'bold', marginVertical: 4 },
-  skipButton: { marginTop: 6 },
-  skipText: { color: '#FFD700', fontSize: 14, fontWeight: '600' },
+  label: { 
+    color: PALETTE.textMuted, 
+    fontSize: 13, 
+    fontWeight: 'bold', 
+    textTransform: 'uppercase' 
+  },
+  timer: { 
+    color: PALETTE.textMain, 
+    fontSize: 36, 
+    fontWeight: 'bold', 
+    marginVertical: 4 
+  },
+  skipButton: { 
+    marginTop: 8, 
+    paddingVertical: 6, 
+    paddingHorizontal: 16, 
+    borderRadius: 8, 
+    backgroundColor: 'rgba(0, 210, 211, 0.1)' // Very faint cyan background
+  },
+  skipText: { 
+    color: PALETTE.accent, 
+    fontSize: 14, 
+    fontWeight: 'bold' 
+  },
 });

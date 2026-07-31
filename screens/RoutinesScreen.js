@@ -3,14 +3,21 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from 'r
 import { useFocusEffect } from '@react-navigation/native';
 import { getAllRoutines, createRoutine, deleteRoutine } from '../database/db';
 
+const PALETTE = {
+  background: '#0B1D3A',
+  surface: '#162C54',
+  accent: '#00D2D3',
+  textMain: '#F8FAFC',
+  textMuted: '#94A3B8',
+  border: '#2A4374',
+};
+
 export default function RoutinesScreen({ navigation }) {
   const [routines, setRoutines] = useState([]);
   const [newName, setNewName] = useState('');
 
   useFocusEffect(
-    useCallback(() => {
-      setRoutines(getAllRoutines());
-    }, [])
+    useCallback(() => { setRoutines(getAllRoutines()); }, [])
   );
 
   function handleCreate() {
@@ -31,6 +38,7 @@ export default function RoutinesScreen({ navigation }) {
         <TextInput
           style={styles.input}
           placeholder="New routine name (e.g. Push Day)"
+          placeholderTextColor={PALETTE.textMuted}
           value={newName}
           onChangeText={setNewName}
         />
@@ -58,12 +66,16 @@ export default function RoutinesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
-  createRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-  input: { flex: 1, borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12 },
-  createButton: { backgroundColor: '#000', borderRadius: 10, justifyContent: 'center', paddingHorizontal: 16 },
-  createButtonText: { color: '#fff', fontWeight: '600' },
-  routineCard: { backgroundColor: '#f7f7f7', padding: 16, borderRadius: 10, marginBottom: 10 },
-  routineName: { fontSize: 16, fontWeight: '600' },
-  emptyText: { color: '#999', textAlign: 'center', marginTop: 30 },
+  container: { flex: 1, padding: 20, backgroundColor: PALETTE.background },
+  
+  createRow: { flexDirection: 'row', gap: 10, marginBottom: 24 },
+  input: { flex: 1, borderWidth: 1, borderColor: PALETTE.border, borderRadius: 12, padding: 14, backgroundColor: PALETTE.surface, color: PALETTE.textMain },
+  
+  createButton: { backgroundColor: PALETTE.accent, borderRadius: 12, justifyContent: 'center', paddingHorizontal: 20 },
+  createButtonText: { color: '#0B1D3A', fontWeight: 'bold' },
+  
+  routineCard: { backgroundColor: PALETTE.surface, padding: 20, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: PALETTE.border },
+  routineName: { fontSize: 18, fontWeight: 'bold', color: PALETTE.textMain },
+  
+  emptyText: { color: PALETTE.textMuted, textAlign: 'center', marginTop: 30, fontStyle: 'italic' },
 });
