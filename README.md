@@ -1,86 +1,338 @@
-# Fishy Gains 💪
+# 🐟 Fishy Gains 💪
 
-A mobile workout tracker built for bodybuilders and lifters — log your sets, track progressive overload, and watch your numbers climb over time. Built with React Native (Expo) and a fully offline SQLite database, so it works in the gym with zero signal.
+**Fishy Gains** is an offline-first mobile workout tracker designed for lifters, bodybuilders, and strength athletes who want to focus on training—not internet connectivity.
 
-## Features
+Track workouts, monitor progressive overload, estimate your one-rep max, analyze long-term progress, and build reusable workout routines—all stored locally on your device with zero accounts or cloud services required.
 
-- **800+ exercise database** — searchable library sourced from an open, public-domain exercise dataset, filtered to weight-training equipment (barbell, dumbbell, cable, machine, bodyweight)
-- **Custom exercises** — add your own lift if something's missing from the database
-- **Set logging** — quick weight × reps entry per exercise, grouped into workout sessions
-- **Progressive overload tracking** — automatically detects and celebrates new personal records as you log
-- **1RM estimation** — calculates estimated one-rep max (Epley formula) so you can compare performance across different rep ranges
-- **Rest timer** — auto-starts after each logged set, with a skip option
-- **Progress charts** — visual line charts of estimated 1RM over time, per exercise
-- **Workout history** — every past session with exercises, sets, and total training volume
-- **Volume tracking** — total weight lifted per session (sets × reps × weight)
-- **Workout routines/templates** — save routines like "Push Day" and reuse them instead of rebuilding from scratch
-- **Body log** — track bodyweight and optional measurements (chest, waist, arms) with a trend chart
-- **Fully offline-first** — all data lives in local SQLite on the device, no backend, no internet required
+---
 
-## Tech stack
+##  Features
 
-- **React Native** (Expo) — cross-platform mobile framework
-- **Expo SQLite** — local, offline-first relational database
-- **React Navigation** — native stack navigation between screens
-- **react-native-chart-kit** + **react-native-svg** — progress charts
-- **Exercise data**: [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (public domain / Unlicense)
+###  Extensive Exercise Library
 
-## Project structure
+* Browse over **800+ exercises**
+* Fast search functionality
+* Based on the public-domain **free-exercise-db** dataset
+* Curated specifically for weight-training equipment including:
 
+  * Barbell
+  * Dumbbell
+  * Cable
+  * Machine
+  * Bodyweight
+
+###  Custom Exercises
+
+Can't find your favorite variation?
+
+Create your own exercises and seamlessly integrate them into your workouts.
+
+---
+
+###  Workout Logging
+
+* Fast weight × reps logging
+* Organized into workout sessions
+* Edit or review previous workouts anytime
+* Optimized for quick use between sets
+
+---
+
+###  Progressive Overload Tracking
+
+Automatically detects new Personal Records (PRs) while logging workouts and celebrates your progress.
+
+No manual tracking required.
+
+---
+
+###  Estimated 1RM
+
+Uses the **Epley Formula** to estimate your one-rep maximum from every logged set, allowing meaningful comparisons across different rep ranges.
+
+---
+
+###  Smart Rest Timer
+
+* Starts automatically after each set
+* Skip option when you're ready early
+* Keeps workouts flowing without distractions
+
+---
+
+###  Progress Analytics
+
+Visualize your improvements with interactive charts showing:
+
+* Estimated 1RM progression
+* Long-term strength trends
+* Exercise-specific history
+
+---
+
+###  Workout History
+
+Every completed session is permanently stored locally, including:
+
+* Exercises performed
+* Individual sets
+* Repetitions
+* Weight lifted
+* Total training volume
+
+---
+
+###  Workout Routines
+
+Create reusable workout templates such as:
+
+* Push Day
+* Pull Day
+* Legs
+* Upper / Lower
+* Full Body
+
+Start an entire workout in seconds instead of rebuilding sessions every time.
+
+---
+
+###  Body Progress Tracking
+
+Monitor your physical progress with:
+
+* Bodyweight
+* Chest measurements
+* Waist measurements
+* Arm measurements
+* Historical trend charts
+
+---
+
+###  Shareable Workout Cards
+
+Generate beautiful workout summary images showcasing:
+
+* Completed workout statistics
+* Personal Records
+* Training volume
+
+Share directly to your favorite social media platform.
+
+---
+
+###  Deep Oceanic Design
+
+A completely custom visual identity featuring:
+
+* Navy backgrounds (`#0B1D3A`)
+* Bright cyan accents (`#00D2D3`)
+* High contrast typography
+* Smooth mobile-first experience
+
+---
+
+###  Offline First
+
+Everything works without internet.
+
+* No backend
+* No accounts
+* No subscriptions
+* No cloud storage
+
+All data is securely stored inside a local SQLite database on your device.
+
+---
+
+###  Ready for Production
+
+Configured with **Expo EAS Build**, allowing direct Android APK generation for easy installation and distribution.
+
+---
+
+# 🛠 Tech Stack
+
+| Category         | Technology                                   |
+| ---------------- | -------------------------------------------- |
+| Framework        | React Native (Expo)                          |
+| Database         | Expo SQLite                                  |
+| Navigation       | React Navigation                             |
+| Charts           | react-native-chart-kit, react-native-svg     |
+| Sharing          | react-native-view-shot, expo-sharing         |
+| Exercise Dataset | free-exercise-db (Public Domain / Unlicense) |
+
+---
+
+#  Architecture
+
+```text
+                User
+                  │
+                  ▼
+         React Native (Expo)
+                  │
+     ┌────────────┴────────────┐
+     ▼                         ▼
+ Workout Screens         Progress Charts
+     │                         │
+     └────────────┬────────────┘
+                  ▼
+           SQLite Database
+                  │
+       Workouts • PRs • Body Logs
+       Exercises • Routines
 ```
+
+---
+
+#  Project Structure
+
+```text
 fishy-gains/
-├── App.js                     # Navigation setup, DB initialization
+│
+├── App.js
+│
 ├── database/
-│   └── db.js                  # SQLite schema, queries, and business logic (PRs, 1RM, volume)
+│   └── db.js
+│
 ├── screens/
-│   ├── HomeScreen.js          # Workout history, entry point
+│   ├── HomeScreen.js
 │   ├── ExercisePickerScreen.js
-│   ├── LogWorkoutScreen.js    # Set logging, PR detection, rest timer
+│   ├── LogWorkoutScreen.js
 │   ├── ExerciseHistoryScreen.js
 │   ├── AddExerciseScreen.js
 │   ├── RoutinesScreen.js
 │   ├── EditRoutineScreen.js
 │   ├── StartRoutineScreen.js
 │   └── BodyLogScreen.js
+│
 ├── components/
-│   └── RestTimer.js
+│   ├── RestTimer.js
+│   └── ShareableWorkoutCard.js
+│
 └── assets/
-    └── exercises.json         # Exercise dataset
+    ├── exercises.json
+    └── icon.png
 ```
 
-## Getting started
+---
 
-### Prerequisites
-- [Node.js](https://nodejs.org)
-- [Expo Go](https://expo.dev/go) app on your phone (iOS or Android)
+#  Getting Started
 
-### Setup
+## Prerequisites
+
+* Node.js
+* npm
+* Expo Go (Android or iOS)
+
+---
+
+## Installation
+
+Clone the repository:
 
 ```bash
 git clone https://github.com/Fish-DeveloperAi/Fishy-Gains.git
 cd Fishy-Gains
+```
+
+Install dependencies:
+
+```bash
 npm install --legacy-peer-deps
+```
+
+Start the development server:
+
+```bash
 npx expo start
 ```
 
-Scan the QR code with your phone's camera (iOS) or the Expo Go app (Android) to run it live.
+Open the application by scanning the QR code with:
 
-## How it works
+* **Expo Go** (Android)
+* **Camera App** (iOS)
 
-- On first launch, the app seeds its local SQLite database with the exercise dataset, filtered to weight-training equipment.
-- Every workout, set, routine, and body log entry is stored locally on-device — no account, no server, no sync required.
-- PR detection compares each new set's estimated 1RM against your all-time best for that exercise and surfaces a celebration banner when you beat it.
+---
 
-## Data source & license
+#  How It Works
 
-Exercise data is sourced from [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db), released under the Unlicense (public domain).
+On first launch, Fishy Gains automatically initializes a local SQLite database and imports the bundled exercise dataset.
 
-## Roadmap
+Every workout, routine, body measurement, and personal record is stored directly on your device.
 
-- [ ] Social sharing / workout summary export
-- [ ] Auto-chaining through full routine exercise lists
-- [ ] Background-safe rest timer with notifications
+When a newly logged set produces a higher estimated 1RM than your previous best, the app automatically recognizes it as a Personal Record and displays a celebration banner.
 
-## Author
+Because everything is stored locally, the application remains fully functional even without an internet connection.
 
-Built by Amine — [GitHub](https://github.com/Fish-DeveloperAi) · aminebakhda1@gmail.com
+---
+
+#  Privacy
+
+Fishy Gains is designed with privacy in mind.
+
+* No accounts
+* No analytics
+* No advertisements
+* No cloud synchronization
+* No personal data collection
+
+Your training data never leaves your device.
+
+---
+
+#  Data Source
+
+Exercise information is provided by **free-exercise-db**, released under the **Unlicense (Public Domain)**.
+
+---
+
+# Roadmap
+
+### Completed
+
+* 800+ exercise database
+* Workout routines
+* Body tracking
+* Progressive overload detection
+* Shareable workout cards
+* Deep Oceanic UI redesign
+* Offline SQLite storage
+* Exercise history
+* Estimated 1RM calculations
+
+### Planned
+
+* Background-safe rest timer notifications
+* Automatic progression through routine exercises
+* Workout calendar
+* Advanced filtering & search
+* Exercise notes
+* Backup & restore functionality
+* Wear OS integration
+* Apple Health / Google Fit support
+
+---
+
+# Authors
+
+### **Amine**
+
+GitHub: https://github.com/Fish-DeveloperAi
+
+[aminebakhda1@gmail.com](mailto:aminebakhda1@gmail.com)
+
+---
+
+### **Aymen Hakkaoui**
+
+GitHub: https://github.com/TheDeadShadow47
+
+[aymenhakkaoui41@gmail.com](mailto:aymenhakkaoui41@gmail.com)
+
+---
+
+## Support
+
+If you enjoy Fishy Gains or find it useful, consider giving the repository a **Star** on GitHub. It helps support the project and makes it easier for others to discover.
+
