@@ -1,4 +1,4 @@
-# 🐟 Fishy Gains 💪
+# 🐟 Fishy Gains
 
 **Fishy Gains** is an offline-first mobile workout tracker designed for lifters, bodybuilders, and strength athletes who want to focus on training—not internet connectivity.
 
