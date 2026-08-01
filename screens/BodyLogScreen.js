@@ -1,113 +1,276 @@
-import { useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Dimensions } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { LineChart } from 'react-native-chart-kit';
-import { addBodyLog, getAllBodyLogs } from '../database/db';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
-const PALETTE = {
+import { getBodyLogs, addBodyLog, deleteBodyLog } from '../database/db';
+
+const COLORS = {
   background: '#0B1D3A',
-  surface: '#162C54',
+  card: '#12274D',
+  cardAlt: '#162C54',
   accent: '#00D2D3',
-  textMain: '#F8FAFC',
-  textMuted: '#94A3B8',
-  border: '#2A4374',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#7C8DAF',
+  danger: '#FF5C5C',
 };
 
+function formatDate(dateString) {
+  const d = new Date(dateString.replace(' ', 'T'));
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 export default function BodyLogScreen() {
-  const [weight, setWeight] = useState('');
-  const [chest, setChest] = useState('');
-  const [waist, setWaist] = useState('');
-  const [arms, setArms] = useState('');
   const [logs, setLogs] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [weightInput, setWeightInput] = useState('');
+  const [bodyFatInput, setBodyFatInput] = useState('');
+
+  const loadLogs = useCallback(() => {
+    setLogs(getBodyLogs());
+  }, []);
 
   useFocusEffect(
-    useCallback(() => { setLogs(getAllBodyLogs()); }, [])
+    useCallback(() => {
+      loadLogs();
+    }, [loadLogs])
   );
 
-  function handleSave() {
-    if (!weight) return;
-    addBodyLog(parseFloat(weight), chest ? parseFloat(chest) : null, waist ? parseFloat(waist) : null, arms ? parseFloat(arms) : null);
-    setWeight(''); setChest(''); setWaist(''); setArms('');
-    setLogs(getAllBodyLogs());
-  }
+  const latest = logs[0];
+  const previous = logs[1];
+  const weightDelta = latest && previous && latest.weight != null && previous.weight != null
+    ? latest.weight - previous.weight
+    : null;
 
-  const weightData = logs.filter((l) => l.weight != null).map((l) => l.weight);
-  const weightLabels = logs.filter((l) => l.weight != null).map((l) => l.date.slice(5));
-  const hasEnoughData = weightData.length >= 2;
+  const handleAddLog = () => {
+    const weight = weightInput.trim() ? parseFloat(weightInput) : null;
+    const bodyFat = bodyFatInput.trim() ? parseFloat(bodyFatInput) : null;
+    if (weight === null && bodyFat === null) {
+      Alert.alert('Enter a Value', 'Please enter a weight or body fat percentage.');
+      return;
+    }
+    if (weight !== null && (isNaN(weight) || weight <= 0)) {
+      Alert.alert('Invalid Weight', 'Please enter a valid weight.');
+      return;
+    }
+    if (bodyFat !== null && (isNaN(bodyFat) || bodyFat < 0 || bodyFat > 100)) {
+      Alert.alert('Invalid Body Fat', 'Please enter a valid percentage between 0 and 100.');
+      return;
+    }
+    addBodyLog(weight, bodyFat);
+    setWeightInput('');
+    setBodyFatInput('');
+    setModalVisible(false);
+    loadLogs();
+  };
+
+  const handleDelete = (id) => {
+    deleteBodyLog(id);
+    loadLogs();
+  };
+
+  const maxWeight = Math.max(1, ...logs.filter((l) => l.weight != null).map((l) => l.weight));
+  const minWeight = Math.min(maxWeight, ...logs.filter((l) => l.weight != null).map((l) => l.weight));
+  const range = Math.max(1, maxWeight - minWeight);
+  const chartLogs = logs.slice(0, 10).reverse();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Body Log</Text>
-
-      <View style={styles.inputCard}>
-        <View style={styles.inputRow}>
-          <TextInput style={styles.input} placeholder="Weight (kg)" placeholderTextColor={PALETTE.textMuted} keyboardType="numeric" value={weight} onChangeText={setWeight} />
-          <TextInput style={styles.input} placeholder="Chest (cm)" placeholderTextColor={PALETTE.textMuted} keyboardType="numeric" value={chest} onChangeText={setChest} />
-        </View>
-        <View style={styles.inputRow}>
-          <TextInput style={styles.input} placeholder="Waist (cm)" placeholderTextColor={PALETTE.textMuted} keyboardType="numeric" value={waist} onChangeText={setWaist} />
-          <TextInput style={styles.input} placeholder="Arms (cm)" placeholderTextColor={PALETTE.textMuted} keyboardType="numeric" value={arms} onChangeText={setArms} />
-        </View>
-
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Log Today's Stats</Text>
-        </TouchableOpacity>
-      </View>
-
-      {hasEnoughData && (
-        <View style={styles.chartContainer}>
-          <LineChart
-            data={{ labels: weightLabels, datasets: [{ data: weightData }] }}
-            width={Dimensions.get('window').width - 40}
-            height={200}
-            yAxisSuffix="kg"
-            chartConfig={{
-              backgroundColor: PALETTE.surface,
-              backgroundGradientFrom: PALETTE.surface,
-              backgroundGradientTo: PALETTE.surface,
-              decimalPlaces: 1,
-              color: (opacity = 1) => `rgba(0, 210, 211, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(248, 250, 252, ${opacity})`,
-              propsForDots: { r: '4', strokeWidth: '2', stroke: PALETTE.accent },
-            }}
-            bezier
-            style={{ borderRadius: 12 }}
-          />
-        </View>
-      )}
-
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <FlatList
-        style={{ marginTop: 10 }}
-        data={[...logs].reverse()}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.rowDate}>{item.date}</Text>
-            <Text style={styles.rowValue}>{item.weight ? `${item.weight}kg` : '—'}</Text>
+        data={logs}
+        keyExtractor={(item) => String(item.id)}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <View>
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>CURRENT WEIGHT</Text>
+                <Text style={styles.summaryValue}>{latest && latest.weight != null ? `${latest.weight} lb` : '—'}</Text>
+                {weightDelta !== null && (
+                  <View style={styles.deltaRow}>
+                    <Ionicons
+                      name={weightDelta > 0 ? 'arrow-up' : weightDelta < 0 ? 'arrow-down' : 'remove'}
+                      size={12}
+                      color={COLORS.textSecondary}
+                    />
+                    <Text style={styles.deltaText}>{Math.abs(weightDelta).toFixed(1)} lb</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.summaryCard}>
+                <Text style={styles.summaryLabel}>BODY FAT</Text>
+                <Text style={styles.summaryValue}>{latest && latest.body_fat != null ? `${latest.body_fat}%` : '—'}</Text>
+              </View>
+            </View>
+
+            {chartLogs.filter((l) => l.weight != null).length > 1 && (
+              <View style={styles.chartCard}>
+                <Text style={styles.chartLabel}>WEIGHT TREND</Text>
+                <View style={styles.chartRow}>
+                  {chartLogs.map((log, idx) => {
+                    if (log.weight == null) return <View key={idx} style={styles.chartCol} />;
+                    const heightPct = ((log.weight - minWeight) / range) * 60 + 10;
+                    return (
+                      <View key={idx} style={styles.chartCol}>
+                        <View style={[styles.chartBar, { height: heightPct }]} />
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+              <Ionicons name="add-circle" size={20} color={COLORS.accent} />
+              <Text style={styles.addButtonText}>Log Entry</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.sectionLabel}>HISTORY</Text>
           </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="body-outline" size={36} color={COLORS.textSecondary} />
+            <Text style={styles.emptyStateText}>No entries yet</Text>
+          </View>
+        }
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.logRow} onLongPress={() => handleDelete(item.id)} activeOpacity={0.7}>
+            <Text style={styles.logDate}>{formatDate(item.date)}</Text>
+            <View style={styles.logValues}>
+              {item.weight != null && <Text style={styles.logValueText}>{item.weight} lb</Text>}
+              {item.body_fat != null && <Text style={styles.logValueTextSecondary}>{item.body_fat}%</Text>}
+            </View>
+          </TouchableOpacity>
         )}
-        ListEmptyComponent={<Text style={styles.emptyText}>No entries yet.</Text>}
       />
-    </View>
+
+      <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
+        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>New Body Log</Text>
+            <Text style={styles.modalInputLabel}>WEIGHT (LB)</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="decimal-pad"
+              placeholder="e.g. 175"
+              placeholderTextColor={COLORS.textSecondary}
+              value={weightInput}
+              onChangeText={setWeightInput}
+            />
+            <Text style={styles.modalInputLabel}>BODY FAT %</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="decimal-pad"
+              placeholder="Optional"
+              placeholderTextColor={COLORS.textSecondary}
+              value={bodyFatInput}
+              onChangeText={setBodyFatInput}
+            />
+            <View style={styles.modalButtonRow}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={() => {
+                  setWeightInput('');
+                  setBodyFatInput('');
+                  setModalVisible(false);
+                }}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalSaveButton} onPress={handleAddLog}>
+                <Text style={styles.modalSaveText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: PALETTE.background },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: PALETTE.textMain },
-  
-  inputCard: { backgroundColor: PALETTE.surface, padding: 16, borderRadius: 16, borderWidth: 1, borderColor: PALETTE.border, marginBottom: 20 },
-  inputRow: { flexDirection: 'row', gap: 10, marginBottom: 10 },
-  input: { flex: 1, borderWidth: 1, borderColor: PALETTE.border, borderRadius: 10, padding: 12, backgroundColor: PALETTE.background, color: PALETTE.textMain, fontWeight: '600' },
-  
-  saveButton: { backgroundColor: PALETTE.accent, padding: 14, borderRadius: 10, alignItems: 'center', marginTop: 8 },
-  saveButtonText: { color: '#0B1D3A', fontWeight: 'bold', fontSize: 15 },
-  
-  chartContainer: { backgroundColor: PALETTE.surface, borderRadius: 16, padding: 10, borderWidth: 1, borderColor: PALETTE.border, alignItems: 'center', marginBottom: 10 },
-  
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: PALETTE.border },
-  rowDate: { color: PALETTE.textMuted, fontSize: 15 },
-  rowValue: { fontWeight: 'bold', color: PALETTE.textMain, fontSize: 15 },
-  
-  emptyText: { color: PALETTE.textMuted, textAlign: 'center', marginTop: 20 },
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
+  listContent: { padding: 20, paddingBottom: 40 },
+  summaryRow: { flexDirection: 'row', marginBottom: 16 },
+  summaryCard: {
+    flex: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 16,
+    marginRight: 10,
+  },
+  summaryLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  summaryValue: { color: COLORS.textPrimary, fontSize: 24, fontWeight: '800', marginTop: 6 },
+  deltaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
+  deltaText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 4 },
+  chartCard: { backgroundColor: COLORS.card, borderRadius: 18, padding: 16, marginBottom: 16 },
+  chartLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 14 },
+  chartRow: { flexDirection: 'row', alignItems: 'flex-end', height: 70, justifyContent: 'space-between' },
+  chartCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: 70 },
+  chartBar: { width: 8, borderRadius: 4, backgroundColor: COLORS.accent },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    paddingVertical: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0,210,211,0.3)',
+    borderStyle: 'dashed',
+  },
+  addButtonText: { color: COLORS.accent, fontWeight: '700', fontSize: 14, marginLeft: 8 },
+  sectionLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
+  emptyState: { alignItems: 'center', paddingVertical: 32 },
+  emptyStateText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600', marginTop: 10 },
+  logRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 8,
+  },
+  logDate: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '700' },
+  logValues: { flexDirection: 'row' },
+  logValueText: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '700', marginLeft: 14 },
+  logValueTextSecondary: { color: COLORS.accent, fontSize: 13, fontWeight: '700', marginLeft: 14 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 30,
+  },
+  modalCard: { width: '100%', backgroundColor: COLORS.cardAlt, borderRadius: 22, padding: 22 },
+  modalTitle: { color: COLORS.textPrimary, fontSize: 17, fontWeight: '800', marginBottom: 16 },
+  modalInputLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6, marginTop: 10 },
+  modalInput: {
+    backgroundColor: COLORS.background,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: COLORS.textPrimary,
+    fontSize: 15,
+  },
+  modalButtonRow: { flexDirection: 'row', marginTop: 20 },
+  modalCancelButton: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 14, marginRight: 8 },
+  modalCancelText: { color: COLORS.textSecondary, fontWeight: '700', fontSize: 15 },
+  modalSaveButton: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 14, backgroundColor: COLORS.accent, marginLeft: 8 },
+  modalSaveText: { color: '#0B1D3A', fontWeight: '800', fontSize: 15 },
 });

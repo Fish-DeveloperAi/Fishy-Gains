@@ -1,96 +1,150 @@
-import { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
-import { getHistoryForExercise, estimate1RM } from '../database/db';
+import React, { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
-const PALETTE = {
+import { getExerciseById, getExerciseHistory, getExercisePRs } from '../database/db';
+
+const COLORS = {
   background: '#0B1D3A',
-  surface: '#162C54',
+  card: '#12274D',
+  cardAlt: '#162C54',
   accent: '#00D2D3',
-  textMain: '#F8FAFC',
-  textMuted: '#94A3B8',
-  border: '#2A4374',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#7C8DAF',
+  danger: '#FF5C5C',
 };
 
-export default function ExerciseHistoryScreen({ route }) {
-  const { exerciseId, exerciseName } = route.params;
+function formatDate(dateString) {
+  const d = new Date(dateString.replace(' ', 'T'));
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export default function ExerciseHistoryScreen({ route, navigation }) {
+  const { exerciseId } = route.params;
+  const [exercise, setExercise] = useState(null);
   const [history, setHistory] = useState([]);
+  const [prs, setPrs] = useState({ maxWeight: 0, maxWeightReps: 0, maxVolume: 0, estimated1RM: 0 });
 
-  useEffect(() => { setHistory(getHistoryForExercise(exerciseId)); }, []);
+  const loadData = useCallback(() => {
+    const ex = getExerciseById(exerciseId);
+    setExercise(ex);
+    if (ex) navigation.setOptions({ title: ex.name });
+    setHistory(getExerciseHistory(exerciseId));
+    setPrs(getExercisePRs(exerciseId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exerciseId]);
 
-  const bestSet = history.reduce((best, s) => (s.weight > (best?.weight || 0) ? s : best), null);
-  const chartData = history.map((s) => estimate1RM(s.weight, s.reps));
-  const chartLabels = history.map((s) => s.date.slice(5));
-  const hasEnoughData = chartData.length >= 2;
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  const chartWorkouts = history.slice(0, 10).reverse();
+  const maxTopSet = Math.max(1, ...chartWorkouts.map((w) => Math.max(...w.sets.map((s) => s.weight), 0)));
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{exerciseName}</Text>
-
-      {bestSet && (
-        <View style={styles.prCard}>
-          <Text style={styles.prLabel}>Personal Best</Text>
-          <Text style={styles.prValue}>{bestSet.weight}kg × {bestSet.reps} reps</Text>
-        </View>
-      )}
-
-      {hasEnoughData && (
-        <View style={styles.chartContainer}>
-          <LineChart
-            data={{ labels: chartLabels, datasets: [{ data: chartData }] }}
-            width={Dimensions.get('window').width - 40}
-            height={220}
-            yAxisSuffix="kg"
-            chartConfig={{
-              backgroundColor: PALETTE.surface,
-              backgroundGradientFrom: PALETTE.surface,
-              backgroundGradientTo: PALETTE.surface,
-              decimalPlaces: 1,
-              color: (opacity = 1) => `rgba(0, 210, 211, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(248, 250, 252, ${opacity})`,
-              propsForDots: { r: '4', strokeWidth: '2', stroke: PALETTE.accent },
-            }}
-            bezier
-            style={{ borderRadius: 12 }}
-          />
-        </View>
-      )}
-
-      {!hasEnoughData && history.length > 0 && (
-        <Text style={styles.emptyText}>Log a few more sets to see your progress chart.</Text>
-      )}
-
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <FlatList
-        style={{ marginTop: 20 }}
         data={history}
-        keyExtractor={(_, index) => index.toString()}
+        keyExtractor={(item) => String(item.workoutId)}
+        contentContainerStyle={styles.listContent}
+        ListHeaderComponent={
+          <View>
+            {exercise && (
+              <Text style={styles.exerciseMeta}>{exercise.muscle_group} · {exercise.category}</Text>
+            )}
+
+            <View style={styles.prGrid}>
+              <View style={styles.prCard}>
+                <Ionicons name="trophy" size={18} color={COLORS.accent} />
+                <Text style={styles.prValue}>{prs.maxWeight || 0} lb</Text>
+                <Text style={styles.prLabel}>Best Weight{prs.maxWeightReps ? ` × ${prs.maxWeightReps}` : ''}</Text>
+              </View>
+              <View style={styles.prCard}>
+                <Ionicons name="stats-chart" size={18} color={COLORS.accent} />
+                <Text style={styles.prValue}>{Math.round(prs.maxVolume || 0).toLocaleString()}</Text>
+                <Text style={styles.prLabel}>Best Set Volume</Text>
+              </View>
+              <View style={styles.prCard}>
+                <Ionicons name="rocket" size={18} color={COLORS.accent} />
+                <Text style={styles.prValue}>{prs.estimated1RM || 0} lb</Text>
+                <Text style={styles.prLabel}>Est. 1RM</Text>
+              </View>
+            </View>
+
+            {chartWorkouts.length > 1 && (
+              <View style={styles.chartCard}>
+                <Text style={styles.sectionLabel}>STRENGTH PROGRESSION</Text>
+                <View style={styles.chartRow}>
+                  {chartWorkouts.map((w, idx) => {
+                    const topSet = Math.max(...w.sets.map((s) => s.weight), 0);
+                    const heightPct = (topSet / maxTopSet) * 70 + 6;
+                    return (
+                      <View key={idx} style={styles.chartCol}>
+                        <View style={[styles.chartBar, { height: heightPct }]} />
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            <Text style={styles.sectionLabel}>WORKOUT HISTORY</Text>
+          </View>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Ionicons name="time-outline" size={36} color={COLORS.textSecondary} />
+            <Text style={styles.emptyStateText}>No history for this exercise yet</Text>
+          </View>
+        }
         renderItem={({ item }) => (
-          <View style={styles.row}>
-            <Text style={styles.rowDate}>{item.date}</Text>
-            <Text style={styles.rowValue}>{item.weight}kg × {item.reps}</Text>
+          <View style={styles.historyCard}>
+            <Text style={styles.historyDate}>{formatDate(item.date)}</Text>
+            {item.sets.map((set, idx) => (
+              <View key={set.id} style={styles.historySetRow}>
+                <Text style={styles.historySetIndex}>Set {idx + 1}</Text>
+                <Text style={styles.historySetValue}>
+                  {set.weight} lb × {set.reps}
+                  {set.is_pr === 1 ? '  🏆' : ''}
+                </Text>
+              </View>
+            ))}
           </View>
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No history yet for this exercise.</Text>
-        }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: PALETTE.background },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, color: PALETTE.textMain },
-  
-  prCard: { backgroundColor: PALETTE.surface, padding: 16, borderRadius: 12, borderWidth: 1, borderColor: PALETTE.accent, marginBottom: 20 },
-  prLabel: { color: PALETTE.textMuted, fontSize: 13, fontWeight: '600', textTransform: 'uppercase' },
-  prValue: { color: PALETTE.accent, fontSize: 24, fontWeight: 'bold', marginTop: 4 },
-  
-  chartContainer: { backgroundColor: PALETTE.surface, borderRadius: 16, padding: 10, borderWidth: 1, borderColor: PALETTE.border, alignItems: 'center' },
-  
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: PALETTE.border },
-  rowDate: { fontSize: 15, color: PALETTE.textMuted },
-  rowValue: { fontSize: 16, fontWeight: 'bold', color: PALETTE.textMain },
-  
-  emptyText: { color: PALETTE.textMuted, textAlign: 'center', marginTop: 30, fontStyle: 'italic' },
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
+  listContent: { padding: 20, paddingBottom: 40 },
+  exerciseMeta: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 16 },
+  prGrid: { flexDirection: 'row', marginBottom: 16 },
+  prCard: {
+    flex: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 16,
+    padding: 14,
+    marginRight: 8,
+    alignItems: 'flex-start',
+  },
+  prValue: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '800', marginTop: 8 },
+  prLabel: { color: COLORS.textSecondary, fontSize: 10, fontWeight: '600', marginTop: 2 },
+  chartCard: { backgroundColor: COLORS.card, borderRadius: 18, padding: 16, marginBottom: 20 },
+  sectionLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
+  chartRow: { flexDirection: 'row', alignItems: 'flex-end', height: 80, justifyContent: 'space-between' },
+  chartCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: 80 },
+  chartBar: { width: 10, borderRadius: 5, backgroundColor: COLORS.accent },
+  emptyState: { alignItems: 'center', paddingVertical: 32 },
+  emptyStateText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600', marginTop: 10, textAlign: 'center' },
+  historyCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 10 },
+  historyDate: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 8 },
+  historySetRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
+  historySetIndex: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600' },
+  historySetValue: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '700' },
 });
