@@ -1,90 +1,139 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+
 import { addCustomExercise } from '../database/db';
 
-const PALETTE = {
+const COLORS = {
   background: '#0B1D3A',
-  surface: '#162C54',
+  card: '#12274D',
+  cardAlt: '#162C54',
   accent: '#00D2D3',
-  textMain: '#F8FAFC',
-  textMuted: '#94A3B8',
-  border: '#2A4374',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#7C8DAF',
+  danger: '#FF5C5C',
 };
 
-const MUSCLE_OPTIONS = ['chest', 'back', 'shoulders', 'biceps', 'triceps', 'legs', 'abs', 'other'];
-const EQUIPMENT_OPTIONS = ['barbell', 'dumbbell', 'cable', 'machine', 'body only', 'other'];
+const MUSCLE_GROUPS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Cardio', 'Full Body'];
+const CATEGORIES = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Other'];
 
 export default function AddExerciseScreen({ navigation }) {
   const [name, setName] = useState('');
-  const [muscle, setMuscle] = useState('other');
-  const [equipment, setEquipment] = useState('other');
+  const [muscleGroup, setMuscleGroup] = useState('Chest');
+  const [category, setCategory] = useState('Barbell');
 
-  function handleSave() {
-    if (!name.trim()) return;
-    addCustomExercise(name.trim(), 'strength', equipment, muscle);
+  const handleSave = () => {
+    const trimmed = name.trim();
+    if (trimmed.length === 0) {
+      Alert.alert('Name Required', 'Please enter an exercise name.');
+      return;
+    }
+    addCustomExercise(trimmed, muscleGroup, category);
     navigation.goBack();
-  }
+  };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.label}>Exercise Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="e.g. Cable Chest Fly"
-          placeholderTextColor={PALETTE.textMuted}
-        />
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <Text style={styles.label}>EXERCISE NAME</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="e.g. Cable Lateral Raise"
+            placeholderTextColor={COLORS.textSecondary}
+            value={name}
+            onChangeText={setName}
+            autoFocus
+          />
 
-        <Text style={styles.label}>Primary Muscle</Text>
-        <View style={styles.optionsRow}>
-          {MUSCLE_OPTIONS.map((m) => (
-            <TouchableOpacity
-              key={m}
-              style={[styles.option, muscle === m && styles.optionSelected]}
-              onPress={() => setMuscle(m)}
-            >
-              <Text style={[styles.optionText, muscle === m && styles.optionTextSelected]}>{m}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+          <Text style={styles.label}>MUSCLE GROUP</Text>
+          <View style={styles.chipWrap}>
+            {MUSCLE_GROUPS.map((mg) => (
+              <TouchableOpacity
+                key={mg}
+                style={[styles.chip, muscleGroup === mg && styles.chipActive]}
+                onPress={() => setMuscleGroup(mg)}
+              >
+                <Text style={[styles.chipText, muscleGroup === mg && styles.chipTextActive]}>{mg}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-        <Text style={styles.label}>Equipment</Text>
-        <View style={styles.optionsRow}>
-          {EQUIPMENT_OPTIONS.map((e) => (
-            <TouchableOpacity
-              key={e}
-              style={[styles.option, equipment === e && styles.optionSelected]}
-              onPress={() => setEquipment(e)}
-            >
-              <Text style={[styles.optionText, equipment === e && styles.optionTextSelected]}>{e}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
+          <Text style={styles.label}>EQUIPMENT</Text>
+          <View style={styles.chipWrap}>
+            {CATEGORIES.map((cat) => (
+              <TouchableOpacity
+                key={cat}
+                style={[styles.chip, category === cat && styles.chipActive]}
+                onPress={() => setCategory(cat)}
+              >
+                <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>{cat}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
-      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save Exercise</Text>
-      </TouchableOpacity>
-    </ScrollView>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Ionicons name="checkmark-circle" size={20} color="#0B1D3A" />
+            <Text style={styles.saveButtonText}>Save Exercise</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: PALETTE.background },
-  card: { backgroundColor: PALETTE.surface, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: PALETTE.border },
-  
-  label: { fontSize: 14, fontWeight: 'bold', marginTop: 10, marginBottom: 10, color: PALETTE.textMain, textTransform: 'uppercase' },
-  input: { borderWidth: 1, borderColor: PALETTE.border, borderRadius: 10, padding: 14, fontSize: 16, backgroundColor: PALETTE.background, color: PALETTE.textMain, marginBottom: 20 },
-  
-  optionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 },
-  option: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 20, backgroundColor: PALETTE.background, borderWidth: 1, borderColor: PALETTE.border },
-  optionSelected: { backgroundColor: 'rgba(0, 210, 211, 0.1)', borderColor: PALETTE.accent },
-  
-  optionText: { fontSize: 13, textTransform: 'capitalize', color: PALETTE.textMuted, fontWeight: '600' },
-  optionTextSelected: { color: PALETTE.accent, fontWeight: 'bold' },
-  
-  saveButton: { backgroundColor: PALETTE.accent, padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 24, marginBottom: 40 },
-  saveButtonText: { color: '#0B1D3A', fontSize: 16, fontWeight: 'bold' },
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  label: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+    marginBottom: 10,
+    marginTop: 18,
+  },
+  input: {
+    backgroundColor: COLORS.card,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: COLORS.textPrimary,
+    fontSize: 15,
+  },
+  chipWrap: { flexDirection: 'row', flexWrap: 'wrap' },
+  chip: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    paddingVertical: 9,
+    paddingHorizontal: 15,
+    marginRight: 8,
+    marginBottom: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chipActive: { backgroundColor: COLORS.accent },
+  chipText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' ,includeFontPadding: false ,textAlignVertical: 'center'},
+  chipTextActive: { color: '#0B1D3A', fontWeight: '800' },
+  saveButton: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.accent,
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+  },
+  saveButtonText: { color: '#0B1D3A', fontWeight: '800', fontSize: 15, marginLeft: 8 },
 });

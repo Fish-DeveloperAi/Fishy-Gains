@@ -1,116 +1,338 @@
-import { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { createWorkout, getAllWorkouts, getExercisesForWorkout, getVolumeForWorkout } from '../database/db';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
-const PALETTE = {
+import {
+  getWorkoutStats,
+  getWeeklyActivity,
+  getRecentWorkouts,
+  getWorkoutStreak,
+  getRecentPRs,
+  deleteWorkout,
+} from '../database/db';
+
+const COLORS = {
   background: '#0B1D3A',
-  surface: '#162C54',
+  card: '#12274D',
+  cardAlt: '#162C54',
   accent: '#00D2D3',
-  textMain: '#F8FAFC',
-  textMuted: '#94A3B8',
-  border: '#2A4374',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#7C8DAF',
+  danger: '#FF5C5C',
 };
 
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  if (mins < 60) return `${mins} min`;
+  const hrs = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  return `${hrs}h ${remMins}m`;
+}
+
+function formatRelativeDate(dateString) {
+  const d = new Date(dateString.replace(' ', 'T'));
+  const now = new Date();
+  const diffMs = now - d;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 export default function HomeScreen({ navigation }) {
-  const [workouts, setWorkouts] = useState([]);
+  const [stats, setStats] = useState({ totalWorkouts: 0, totalVolume: 0, workoutsThisWeek: 0 });
+  const [weeklyActivity, setWeeklyActivity] = useState([]);
+  const [recentWorkouts, setRecentWorkouts] = useState([]);
+  const [streak, setStreak] = useState(0);
+  const [recentPRs, setRecentPRs] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadData = useCallback(() => {
+    setStats(getWorkoutStats());
+    setWeeklyActivity(getWeeklyActivity());
+    setRecentWorkouts(getRecentWorkouts(6));
+    setStreak(getWorkoutStreak());
+    setRecentPRs(getRecentPRs(3));
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      loadWorkouts();
-    }, [])
+      loadData();
+    }, [loadData])
   );
 
-  function loadWorkouts() {
-    const allWorkouts = getAllWorkouts();
-    const withDetails = allWorkouts.map((w) => ({
-      ...w,
-      exercises: getExercisesForWorkout(w.id),
-      volume: getVolumeForWorkout(w.id),
-    }));
-    setWorkouts(withDetails);
-  }
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadData();
+    setTimeout(() => setRefreshing(false), 400);
+  };
 
-  function handleStartWorkout() {
-    const workoutId = createWorkout();
-    navigation.navigate('ExercisePicker', { workoutId });
-  }
+  const maxCount = Math.max(1, ...weeklyActivity.map((d) => d.count));
+
+  const handleDeleteWorkout = (id) => {
+    deleteWorkout(id);
+    loadData();
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>My Workouts</Text>
-      
-      <TouchableOpacity style={styles.primaryButton} onPress={handleStartWorkout}>
-        <Text style={styles.primaryButtonText}>+ Start New Workout</Text>
-      </TouchableOpacity>
-      
-      <View style={styles.rowButtons}>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('Routines')}>
-          <Text style={styles.secondaryButtonText}>My Routines</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.secondaryButton} onPress={() => navigation.navigate('BodyLog')}>
-          <Text style={styles.secondaryButtonText}>Body Log</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl tintColor={COLORS.accent} refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <View style={styles.topRow}>
+          <View>
+            <Text style={styles.greeting}>Welcome back</Text>
+            <Text style={styles.appName}>Fishy Gains 🐟</Text>
+          </View>
+          <TouchableOpacity style={styles.bodyLogButton} onPress={() => navigation.navigate('BodyLog')}>
+            <Ionicons name="body-outline" size={22} color={COLORS.accent} />
+          </TouchableOpacity>
+        </View>
 
-      <FlatList
-        style={{ marginTop: 24 }}
-        data={workouts}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.workoutCard}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.workoutDate}>{item.date}</Text>
-              <Text style={styles.volumeText}>
-                {item.volume.totalSets} sets · {item.volume.totalVolume.toLocaleString()}kg
-              </Text>
-            </View>
-            
-            <View style={styles.chipRow}>
-              {item.exercises.length === 0 ? (
-                <Text style={styles.workoutExercises}>No exercises logged</Text>
-              ) : (
-                item.exercises.map((ex) => (
-                  <TouchableOpacity
-                    key={ex.id}
-                    style={styles.chip}
-                    onPress={() => navigation.navigate('ExerciseHistory', { exerciseId: ex.id, exerciseName: ex.name })}
-                  >
-                    <Text style={styles.chipText}>{ex.name}</Text>
-                  </TouchableOpacity>
-                ))
-              )}
-            </View>
+        {streak > 0 && (
+          <View style={styles.streakBanner}>
+            <Ionicons name="flame" size={20} color={COLORS.accent} />
+            <Text style={styles.streakText}>{streak} day streak — keep it going!</Text>
           </View>
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No workouts yet — start your first one above.</Text>
-        }
-      />
-    </View>
+
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.workoutsThisWeek}</Text>
+            <Text style={styles.statLabel}>This Week</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.totalWorkouts}</Text>
+            <Text style={styles.statLabel}>Total Workouts</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{Math.round(stats.totalVolume).toLocaleString()}</Text>
+            <Text style={styles.statLabel}>Total Volume</Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Weekly Activity</Text>
+          <View style={styles.activityRow}>
+            {weeklyActivity.map((day, idx) => {
+              const barHeight = day.count > 0 ? 12 + (day.count / maxCount) * 46 : 6;
+              const isToday = idx === weeklyActivity.length - 1;
+              return (
+                <View key={idx} style={styles.activityCol}>
+                  <View style={styles.activityBarTrack}>
+                    <View
+                      style={[
+                        styles.activityBar,
+                        {
+                          height: barHeight,
+                          backgroundColor: day.count > 0 ? COLORS.accent : 'rgba(124,141,175,0.25)',
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.activityLabel, isToday && styles.activityLabelToday]}>{day.label}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {recentPRs.length > 0 && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Recent PRs</Text>
+              <Ionicons name="trophy" size={16} color={COLORS.accent} />
+            </View>
+            {recentPRs.map((pr) => (
+              <View key={pr.id} style={styles.prRow}>
+                <View style={styles.prIconWrap}>
+                  <Ionicons name="trending-up" size={16} color={COLORS.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.prExerciseName}>{pr.exercise_name}</Text>
+                  <Text style={styles.prDetail}>{pr.weight} lb × {pr.reps} reps</Text>
+                </View>
+                <Text style={styles.prDate}>{formatRelativeDate(pr.workout_date)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.quickActionsRow}>
+          <TouchableOpacity style={styles.primaryAction} onPress={() => navigation.navigate('Routines')}>
+            <Ionicons name="play-circle" size={22} color="#0B1D3A" />
+            <Text style={styles.primaryActionText}>Start Workout</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitleLarge}>Recent Workouts</Text>
+        </View>
+
+        {recentWorkouts.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="barbell-outline" size={40} color={COLORS.textSecondary} />
+            <Text style={styles.emptyStateText}>No workouts logged yet.</Text>
+            <Text style={styles.emptyStateSubtext}>Start a routine to see it here.</Text>
+          </View>
+        ) : (
+          recentWorkouts.map((workout) => (
+            <TouchableOpacity
+              key={workout.id}
+              style={styles.workoutCard}
+              activeOpacity={0.8}
+              onLongPress={() => handleDeleteWorkout(workout.id)}
+            >
+              <View style={styles.workoutCardHeader}>
+                <Text style={styles.workoutCardTitle} numberOfLines={1}>{workout.name}</Text>
+                <Text style={styles.workoutCardDate}>{formatRelativeDate(workout.date)}</Text>
+              </View>
+              {workout.muscleGroups.length > 0 && (
+                <Text style={styles.workoutCardMuscles} numberOfLines={1}>
+                  {workout.muscleGroups.join(' · ')}
+                </Text>
+              )}
+              <View style={styles.workoutCardStatsRow}>
+                <View style={styles.workoutCardStat}>
+                  <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
+                  <Text style={styles.workoutCardStatText}>{formatDuration(workout.duration_seconds)}</Text>
+                </View>
+                <View style={styles.workoutCardStat}>
+                  <Ionicons name="barbell-outline" size={14} color={COLORS.textSecondary} />
+                  <Text style={styles.workoutCardStatText}>{Math.round(workout.totalVolume).toLocaleString()} lb</Text>
+                </View>
+                <View style={styles.workoutCardStat}>
+                  <Ionicons name="layers-outline" size={14} color={COLORS.textSecondary} />
+                  <Text style={styles.workoutCardStatText}>{workout.totalSets} sets</Text>
+                </View>
+                {workout.prCount > 0 && (
+                  <View style={styles.workoutCardStat}>
+                    <Ionicons name="trophy" size={14} color={COLORS.accent} />
+                    <Text style={[styles.workoutCardStatText, { color: COLORS.accent }]}>{workout.prCount} PR</Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 30, backgroundColor: PALETTE.background },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, color: PALETTE.textMain },
-  
-  primaryButton: { backgroundColor: PALETTE.accent, padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 12, shadowColor: PALETTE.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 },
-  primaryButtonText: { color: '#0B1D3A', fontSize: 16, fontWeight: 'bold' },
-  
-  rowButtons: { flexDirection: 'row', gap: 12 },
-  secondaryButton: { flex: 1, backgroundColor: PALETTE.surface, padding: 14, borderRadius: 12, alignItems: 'center', borderWidth: 1, borderColor: PALETTE.border },
-  secondaryButtonText: { fontWeight: '600', fontSize: 15, color: PALETTE.textMain },
-  
-  workoutCard: { backgroundColor: PALETTE.surface, padding: 16, borderRadius: 16, marginBottom: 12, borderWidth: 1, borderColor: PALETTE.border },
-  cardHeader: { borderBottomWidth: 1, borderBottomColor: PALETTE.border, paddingBottom: 10, marginBottom: 10 },
-  workoutDate: { fontSize: 16, fontWeight: 'bold', color: PALETTE.textMain },
-  volumeText: { fontSize: 13, color: PALETTE.accent, marginTop: 4, fontWeight: '600' },
-  workoutExercises: { fontSize: 13, color: PALETTE.textMuted, fontStyle: 'italic' },
-  
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { backgroundColor: PALETTE.background, paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20, borderWidth: 1, borderColor: PALETTE.border },
-  chipText: { color: PALETTE.textMain, fontSize: 12, fontWeight: '500' },
-  
-  emptyText: { color: PALETTE.textMuted, textAlign: 'center', marginTop: 30 },
+  safeArea: { flex: 1, backgroundColor: COLORS.background },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  greeting: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
+  appName: { color: COLORS.textPrimary, fontSize: 26, fontWeight: '800', marginTop: 2 },
+  bodyLogButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.card,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,210,211,0.12)',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+  },
+  streakText: { color: COLORS.accent, fontWeight: '700', fontSize: 14, marginLeft: 8 },
+  statsRow: { flexDirection: 'row', marginBottom: 16 },
+  statCard: {
+    flex: 1,
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    paddingVertical: 16,
+    paddingHorizontal: 10,
+    marginRight: 10,
+    alignItems: 'center',
+  },
+  statValue: { color: COLORS.textPrimary, fontSize: 20, fontWeight: '800' },
+  statLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 4, textAlign: 'center' },
+  sectionCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 18,
+    marginBottom: 16,
+  },
+  sectionTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 14 },
+  sectionTitleLarge: { color: COLORS.textPrimary, fontSize: 19, fontWeight: '800' },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  activityRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },
+  activityCol: { alignItems: 'center', width: 32 },
+  activityBarTrack: { height: 58, justifyContent: 'flex-end' },
+  activityBar: { width: 18, borderRadius: 9 },
+  activityLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 8 },
+  activityLabelToday: { color: COLORS.accent, fontWeight: '800' },
+  prRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
+  prIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,210,211,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  prExerciseName: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '700' },
+  prDetail: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
+  prDate: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '600' },
+  quickActionsRow: { marginBottom: 24 },
+  primaryAction: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.accent,
+    borderRadius: 18,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: COLORS.accent,
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+  },
+  primaryActionText: { color: '#0B1D3A', fontWeight: '800', fontSize: 16, marginLeft: 8 },
+  emptyState: { alignItems: 'center', paddingVertical: 32 },
+  emptyStateText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 12 },
+  emptyStateSubtext: { color: COLORS.textSecondary, fontSize: 13, marginTop: 4 },
+  workoutCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+  },
+  workoutCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  workoutCardTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', flex: 1, marginRight: 8 },
+  workoutCardDate: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600' },
+  workoutCardMuscles: { color: COLORS.accent, fontSize: 12, fontWeight: '600', marginTop: 4 },
+  workoutCardStatsRow: { flexDirection: 'row', marginTop: 12, flexWrap: 'wrap' },
+  workoutCardStat: { flexDirection: 'row', alignItems: 'center', marginRight: 16, marginTop: 4 },
+  workoutCardStatText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 4 },
 });

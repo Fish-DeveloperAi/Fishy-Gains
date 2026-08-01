@@ -1,227 +1,194 @@
-import React, { useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-} from 'react-native';
-import { captureRef } from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
-import { Ionicons } from '@expo/vector-icons'; 
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
-const PALETTE = {
+const COLORS = {
   background: '#0B1D3A',
-  surface: '#162C54',
+  card: '#12274D',
+  cardAlt: '#162C54',
   accent: '#00D2D3',
-  textMain: '#F8FAFC',
-  textMuted: '#94A3B8',
-  border: '#2A4374',
+  textPrimary: '#FFFFFF',
+  textSecondary: '#7C8DAF',
+  danger: '#FF5C5C',
 };
 
-const ShareableWorkoutCard = ({
-  workoutTitle,
-  totalVolume,
-  duration,
-  exercisesCompleted,
-  date,
-}) => {
-  const cardRef = useRef(null);
-  const [isSharing, setIsSharing] = useState(false);
+function formatDuration(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const hrs = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  if (hrs > 0) return `${hrs}h ${remMins}m`;
+  return `${remMins}m`;
+}
 
-  const handleShare = async () => {
-    if (isSharing) return;
+function formatDate(dateString) {
+  const d = new Date(dateString.replace(' ', 'T'));
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+}
 
-    try {
-      setIsSharing(true);
-
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (!isAvailable) {
-        Alert.alert(
-          'Sharing not available',
-          'Sharing isn’t supported on this device.'
-        );
-        return;
-      }
-
-      const uri = await captureRef(cardRef, {
-        format: 'png',
-        quality: 1,
-        result: 'tmpfile',
-      });
-
-      await Sharing.shareAsync(uri, {
-        mimeType: 'image/png',
-        dialogTitle: 'Share your workout',
-        UTI: 'public.png',
-      });
-    } catch (error) {
-      console.error('Error sharing workout card:', error);
-      Alert.alert('Something went wrong', 'Could not generate the share image.');
-    } finally {
-      setIsSharing(false);
-    }
-  };
-
+const ShareableWorkoutCard = React.forwardRef(function ShareableWorkoutCard(
+  { workoutName, date, durationSeconds, totalVolume, totalSets, exerciseCount, prCount, muscleGroups },
+  ref
+) {
   return (
-    <View style={styles.wrapper}>
-      {/* This View is what gets captured — nothing outside it should appear in the screenshot */}
-      <View ref={cardRef} collapsable={false} style={styles.card}>
-        <View style={styles.headerRow}>
-          <Text style={styles.brand}>FISHY GAINS</Text>
-          <Text style={styles.date}>{date || new Date().toLocaleDateString()}</Text>
+    <View ref={ref} collapsable={false} style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.logoRow}>
+          <Ionicons name="fish" size={22} color={COLORS.accent} />
+          <Text style={styles.logoText}>FISHY GAINS</Text>
         </View>
+        <Text style={styles.dateText}>{formatDate(date)}</Text>
+      </View>
 
-        <Text style={styles.title} numberOfLines={2}>
-          {workoutTitle}
-        </Text>
+      <Text style={styles.workoutTitle} numberOfLines={2}>{workoutName}</Text>
 
-        <View style={styles.divider} />
-
-        <View style={styles.statsGrid}>
-          <View style={styles.statBlock}>
-            <Text style={styles.statValue}>{totalVolume}</Text>
-            <Text style={styles.statLabel}>TOTAL VOLUME (kg)</Text>
-          </View>
-
-          <View style={styles.statBlock}>
-            <Text style={styles.statValue}>{duration}</Text>
-            <Text style={styles.statLabel}>DURATION</Text>
-          </View>
-
-          <View style={styles.statBlock}>
-            <Text style={styles.statValue}>{exercisesCompleted}</Text>
-            <Text style={styles.statLabel}>EXERCISES</Text>
-          </View>
+      {muscleGroups && muscleGroups.length > 0 && (
+        <View style={styles.tagRow}>
+          {muscleGroups.slice(0, 4).map((mg) => (
+            <View key={mg} style={styles.tag}>
+              <Text style={styles.tagText}>{mg}</Text>
+            </View>
+          ))}
         </View>
+      )}
 
-        <View style={styles.footerRow}>
-          <View style={styles.dot} />
-          <Text style={styles.footerText}>Logged with Fishy Gains</Text>
+      <View style={styles.statsGrid}>
+        <View style={styles.statBox}>
+          <Ionicons name="time-outline" size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>{formatDuration(durationSeconds)}</Text>
+          <Text style={styles.statLabel}>Duration</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Ionicons name="barbell-outline" size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>{Math.round(totalVolume).toLocaleString()}</Text>
+          <Text style={styles.statLabel}>Volume (lb)</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Ionicons name="layers-outline" size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>{totalSets}</Text>
+          <Text style={styles.statLabel}>Sets</Text>
+        </View>
+        <View style={styles.statBox}>
+          <Ionicons name="body-outline" size={20} color={COLORS.accent} />
+          <Text style={styles.statValue}>{exerciseCount}</Text>
+          <Text style={styles.statLabel}>Exercises</Text>
         </View>
       </View>
 
-      {/* Outside the ref — will NOT appear in the screenshot */}
-      <TouchableOpacity
-        style={styles.shareButton}
-        onPress={handleShare}
-        disabled={isSharing}
-        activeOpacity={0.8}
-      >
-        {isSharing ? (
-          <ActivityIndicator color="#0B1D3A" />
-        ) : (
-          <>
-            <Ionicons name="share-social" size={18} color="#0B1D3A" style={{ marginRight: 8 }} />
-            <Text style={styles.shareButtonText}>Share Workout</Text>
-          </>
-        )}
-      </TouchableOpacity>
+      {prCount > 0 && (
+        <View style={styles.prBanner}>
+          <Ionicons name="trophy" size={18} color="#0B1D3A" />
+          <Text style={styles.prBannerText}>
+            {prCount} Personal Record{prCount > 1 ? 's' : ''} Crushed
+          </Text>
+        </View>
+      )}
+
+      <Text style={styles.footerText}>Track your gains with Fishy Gains</Text>
     </View>
   );
-};
-
-const styles = StyleSheet.create({
-  wrapper: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  card: {
-    width: 340,
-    borderRadius: 24,
-    backgroundColor: PALETTE.background, // Deep navy background for the final image
-    padding: 24,
-    borderWidth: 1,
-    borderColor: PALETTE.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  brand: {
-    color: PALETTE.accent,
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 2,
-  },
-  date: {
-    color: PALETTE.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  title: {
-    color: PALETTE.textMain,
-    fontSize: 26,
-    fontWeight: '800',
-    marginBottom: 20,
-    lineHeight: 32,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: PALETTE.border,
-    marginBottom: 20,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-  },
-  statBlock: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-  statValue: {
-    color: PALETTE.textMain,
-    fontSize: 22,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  statLabel: {
-    color: PALETTE.textMuted,
-    fontSize: 10,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: PALETTE.accent,
-    marginRight: 8,
-  },
-  footerText: {
-    color: PALETTE.textMuted,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  shareButton: {
-    marginTop: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: PALETTE.accent, // Solid cyan for the CTA button
-    paddingVertical: 14,
-    paddingHorizontal: 28,
-    borderRadius: 999,
-    width: 340,
-  },
-  shareButtonText: {
-    color: '#0B1D3A', // Dark navy text for contrast against the cyan button
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
 });
 
 export default ShareableWorkoutCard;
+
+const styles = StyleSheet.create({
+  container: {
+    width: 360,
+    backgroundColor: COLORS.background,
+    borderRadius: 28,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0,210,211,0.25)',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logoText: {
+    color: COLORS.accent,
+    fontWeight: '800',
+    fontSize: 13,
+    letterSpacing: 1.5,
+    marginLeft: 6,
+  },
+  dateText: {
+    color: COLORS.textSecondary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  workoutTitle: {
+    color: COLORS.textPrimary,
+    fontSize: 26,
+    fontWeight: '800',
+    marginBottom: 12,
+  },
+  tagRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+  tag: {
+    backgroundColor: COLORS.cardAlt,
+    borderRadius: 20,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  tagText: {
+    color: COLORS.accent,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: COLORS.card,
+    borderRadius: 20,
+    padding: 16,
+  },
+  statBox: {
+    width: '50%',
+    alignItems: 'flex-start',
+    paddingVertical: 8,
+  },
+  statValue: {
+    color: COLORS.textPrimary,
+    fontSize: 20,
+    fontWeight: '800',
+    marginTop: 6,
+  },
+  statLabel: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  prBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.accent,
+    borderRadius: 16,
+    paddingVertical: 10,
+    marginTop: 16,
+  },
+  prBannerText: {
+    color: '#0B1D3A',
+    fontWeight: '800',
+    fontSize: 13,
+    marginLeft: 8,
+  },
+  footerText: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 18,
+  },
+});
