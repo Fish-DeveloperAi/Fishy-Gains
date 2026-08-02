@@ -1,10 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LineChart } from 'react-native-chart-kit';
 
 import { getExerciseById, getExerciseHistory, getExercisePRs } from '../database/db';
+
+const screenWidth = Dimensions.get('window').width;
 
 const COLORS = {
   background: '#0B1D3A',
@@ -16,11 +19,6 @@ const COLORS = {
   danger: '#FF5C5C',
 };
 
-function formatDate(dateString) {
-  const d = new Date(dateString.replace(' ', 'T'));
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
 export default function ExerciseHistoryScreen({ route, navigation }) {
   const { exerciseId } = route.params;
   const [exercise, setExercise] = useState(null);
@@ -30,11 +28,13 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
   const loadData = useCallback(() => {
     const ex = getExerciseById(exerciseId);
     setExercise(ex);
-    if (ex) navigation.setOptions({ title: ex.name });
+    
+    // Updated to match the "Progress" header in your screenshot
+    if (ex) navigation.setOptions({ title: 'Progress' });
+    
     setHistory(getExerciseHistory(exerciseId));
     setPrs(getExercisePRs(exerciseId));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exerciseId]);
+  }, [exerciseId, navigation]);
 
   useFocusEffect(
     useCallback(() => {
@@ -42,109 +42,189 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
     }, [loadData])
   );
 
-  const chartWorkouts = history.slice(0, 10).reverse();
-  const maxTopSet = Math.max(1, ...chartWorkouts.map((w) => Math.max(...w.sets.map((s) => s.weight), 0)));
+  // Flatten the grouped workout history into individual sets for the minimalist list and chart
+  const flattenedHistory = [];
+  history.forEach(workout => {
+    workout.sets.forEach(set => {
+      flattenedHistory.push({
+        ...set,
+        date: workout.date,
+      });
+    });
+  });
+
+  // Grab the most recent 10 sets for the chart and reverse them for left-to-right chronological order
+  const chartSets = flattenedHistory.slice(0, 10).reverse();
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <FlatList
-        data={history}
-        keyExtractor={(item) => String(item.workoutId)}
+        data={flattenedHistory}
+        keyExtractor={(item) => String(item.id)} 
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <View>
             {exercise && (
-              <Text style={styles.exerciseMeta}>{exercise.muscle_group} · {exercise.category}</Text>
+              <Text style={styles.screenTitle}>{exercise.name}</Text>
             )}
 
-            <View style={styles.prGrid}>
-              <View style={styles.prCard}>
-                <Ionicons name="trophy" size={18} color={COLORS.accent} />
-                <Text style={styles.prValue}>{prs.maxWeight || 0} lb</Text>
-                <Text style={styles.prLabel}>Best Weight{prs.maxWeightReps ? ` × ${prs.maxWeightReps}` : ''}</Text>
-              </View>
-              <View style={styles.prCard}>
-                <Ionicons name="stats-chart" size={18} color={COLORS.accent} />
-                <Text style={styles.prValue}>{Math.round(prs.maxVolume || 0).toLocaleString()}</Text>
-                <Text style={styles.prLabel}>Best Set Volume</Text>
-              </View>
-              <View style={styles.prCard}>
-                <Ionicons name="rocket" size={18} color={COLORS.accent} />
-                <Text style={styles.prValue}>{prs.estimated1RM || 0} lb</Text>
-                <Text style={styles.prLabel}>Est. 1RM</Text>
-              </View>
-            </View>
-
-            {chartWorkouts.length > 1 && (
-              <View style={styles.chartCard}>
-                <Text style={styles.sectionLabel}>STRENGTH PROGRESSION</Text>
-                <View style={styles.chartRow}>
-                  {chartWorkouts.map((w, idx) => {
-                    const topSet = Math.max(...w.sets.map((s) => s.weight), 0);
-                    const heightPct = (topSet / maxTopSet) * 70 + 6;
-                    return (
-                      <View key={idx} style={styles.chartCol}>
-                        <View style={[styles.chartBar, { height: heightPct }]} />
-                      </View>
-                    );
-                  })}
-                </View>
+            {prs.maxWeight > 0 && (
+              <View style={styles.pbCard}>
+                <Text style={styles.pbLabel}>PERSONAL BEST</Text>
+                <Text style={styles.pbValue}>
+                  {prs.maxWeight}kg <Text style={styles.pbReps}>× {prs.maxWeightReps} reps</Text>
+                </Text>
               </View>
             )}
 
-            <Text style={styles.sectionLabel}>WORKOUT HISTORY</Text>
+            {chartSets.length > 1 && (
+              <View style={styles.lineChartCard}>
+                <LineChart
+                  data={{
+                    labels: chartSets.map((s) => {
+                      const d = new Date(s.date.replace(' ', 'T'));
+                      return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    }),
+                    datasets: [
+                      {
+                        data: chartSets.map((s) => s.weight),
+                      },
+                    ],
+                  }}
+                  width={screenWidth - 40} // Accounts for 20px padding on each side
+                  height={220}
+                  yAxisSuffix="kg"
+                  withVerticalLines={false}
+                  withOuterLines={false}
+                  chartConfig={{
+                    backgroundColor: COLORS.card,
+                    backgroundGradientFrom: COLORS.card,
+                    backgroundGradientTo: COLORS.card,
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => `rgba(0, 210, 211, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(124, 141, 175, ${opacity})`,
+                    propsForDots: {
+                      r: '5',
+                      strokeWidth: '2',
+                      stroke: COLORS.accent,
+                    },
+                    propsForBackgroundLines: {
+                      strokeDasharray: '4 4',
+                      stroke: 'rgba(124,141,175,0.15)',
+                    },
+                  }}
+                  bezier
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 18,
+                  }}
+                />
+              </View>
+            )}
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="time-outline" size={36} color={COLORS.textSecondary} />
+            <Ionicons name="barbell-outline" size={36} color={COLORS.textSecondary} />
             <Text style={styles.emptyStateText}>No history for this exercise yet</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <View style={styles.historyCard}>
-            <Text style={styles.historyDate}>{formatDate(item.date)}</Text>
-            {item.sets.map((set, idx) => (
-              <View key={set.id} style={styles.historySetRow}>
-                <Text style={styles.historySetIndex}>Set {idx + 1}</Text>
-                <Text style={styles.historySetValue}>
-                  {set.weight} lb × {set.reps}
-                  {set.is_pr === 1 ? '  🏆' : ''}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
+        renderItem={({ item }) => {
+          // Extracts just the YYYY-MM-DD part to match your screenshot
+          const displayDate = item.date ? item.date.split(' ')[0] : ''; 
+          
+          return (
+            <View style={styles.minimalRowContainer}>
+              <Text style={styles.minimalRowDate}>{displayDate}</Text>
+              <Text style={styles.minimalRowWeight}>
+                {item.weight}kg <Text style={styles.minimalRowReps}>× {item.reps}</Text>
+              </Text>
+            </View>
+          );
+        }}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
-  listContent: { padding: 20, paddingBottom: 40 },
-  exerciseMeta: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: 16 },
-  prGrid: { flexDirection: 'row', marginBottom: 16 },
-  prCard: {
-    flex: 1,
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 14,
-    marginRight: 8,
-    alignItems: 'flex-start',
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: COLORS.background 
   },
-  prValue: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '800', marginTop: 8 },
-  prLabel: { color: COLORS.textSecondary, fontSize: 10, fontWeight: '600', marginTop: 2 },
-  chartCard: { backgroundColor: COLORS.card, borderRadius: 18, padding: 16, marginBottom: 20 },
-  sectionLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
-  chartRow: { flexDirection: 'row', alignItems: 'flex-end', height: 80, justifyContent: 'space-between' },
-  chartCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: 80 },
-  chartBar: { width: 10, borderRadius: 5, backgroundColor: COLORS.accent },
-  emptyState: { alignItems: 'center', paddingVertical: 32 },
-  emptyStateText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600', marginTop: 10, textAlign: 'center' },
-  historyCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 10 },
-  historyDate: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '700', marginBottom: 8 },
-  historySetRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 3 },
-  historySetIndex: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600' },
-  historySetValue: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '700' },
+  listContent: { 
+    padding: 20, 
+    paddingBottom: 40 
+  },
+  screenTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  pbCard: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 210, 211, 0.5)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  pbLabel: {
+    color: 'rgba(124, 141, 175, 0.9)',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  pbValue: {
+    color: '#00d2d3',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  pbReps: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  lineChartCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    paddingVertical: 16,
+    marginBottom: 24, 
+    overflow: 'hidden',
+  },
+  emptyState: { 
+    alignItems: 'center', 
+    paddingVertical: 32 
+  },
+  emptyStateText: { 
+    color: COLORS.textSecondary, 
+    fontSize: 14, 
+    fontWeight: '600', 
+    marginTop: 10, 
+    textAlign: 'center' 
+  },
+  minimalRowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(124, 141, 175, 0.2)',
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+  },
+  minimalRowDate: {
+    color: 'rgba(124, 141, 175, 0.8)',
+    fontSize: 15,
+    letterSpacing: 0.5,
+  },
+  minimalRowWeight: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  minimalRowReps: {
+    fontSize: 16,
+    color: '#FFFFFF',
+  },
 });

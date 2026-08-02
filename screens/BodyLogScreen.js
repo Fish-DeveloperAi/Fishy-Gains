@@ -14,6 +14,10 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Dimensions } from 'react-native';
+import { LineChart } from 'react-native-chart-kit';
+
+const screenWidth = Dimensions.get('window').width;
 
 import { getBodyLogs, addBodyLog, deleteBodyLog } from '../database/db';
 
@@ -37,7 +41,11 @@ export default function BodyLogScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [weightInput, setWeightInput] = useState('');
   const [bodyFatInput, setBodyFatInput] = useState('');
-
+  const [chestInput, setChestInput] = useState('');
+  const [waistInput, setWaistInput] = useState('');
+  const [armsInput, setArmsInput] = useState('');
+  const [expandedLogId, setExpandedLogId] = useState(null);
+  
   const loadLogs = useCallback(() => {
     setLogs(getBodyLogs());
   }, []);
@@ -57,6 +65,10 @@ export default function BodyLogScreen() {
   const handleAddLog = () => {
     const weight = weightInput.trim() ? parseFloat(weightInput) : null;
     const bodyFat = bodyFatInput.trim() ? parseFloat(bodyFatInput) : null;
+    const chest = chestInput.trim() ? parseFloat(chestInput) : null;
+    const waist = waistInput.trim() ? parseFloat(waistInput) : null;
+    const arms = armsInput.trim() ? parseFloat(armsInput) : null;
+    
     if (weight === null && bodyFat === null) {
       Alert.alert('Enter a Value', 'Please enter a weight or body fat percentage.');
       return;
@@ -69,9 +81,15 @@ export default function BodyLogScreen() {
       Alert.alert('Invalid Body Fat', 'Please enter a valid percentage between 0 and 100.');
       return;
     }
-    addBodyLog(weight, bodyFat);
+    
+    // Updated to include the new measurements
+    addBodyLog(weight, bodyFat, chest, waist, arms);
+    
     setWeightInput('');
     setBodyFatInput('');
+    setChestInput('');
+    setWaistInput('');
+    setArmsInput('');
     setModalVisible(false);
     loadLogs();
   };
@@ -81,9 +99,6 @@ export default function BodyLogScreen() {
     loadLogs();
   };
 
-  const maxWeight = Math.max(1, ...logs.filter((l) => l.weight != null).map((l) => l.weight));
-  const minWeight = Math.min(maxWeight, ...logs.filter((l) => l.weight != null).map((l) => l.weight));
-  const range = Math.max(1, maxWeight - minWeight);
   const chartLogs = logs.slice(0, 10).reverse();
 
   return (
@@ -97,7 +112,7 @@ export default function BodyLogScreen() {
             <View style={styles.summaryRow}>
               <View style={styles.summaryCard}>
                 <Text style={styles.summaryLabel}>CURRENT WEIGHT</Text>
-                <Text style={styles.summaryValue}>{latest && latest.weight != null ? `${latest.weight} lb` : '—'}</Text>
+                <Text style={styles.summaryValue}>{latest && latest.weight != null ? `${latest.weight} kg` : '—'}</Text>
                 {weightDelta !== null && (
                   <View style={styles.deltaRow}>
                     <Ionicons
@@ -105,7 +120,7 @@ export default function BodyLogScreen() {
                       size={12}
                       color={COLORS.textSecondary}
                     />
-                    <Text style={styles.deltaText}>{Math.abs(weightDelta).toFixed(1)} lb</Text>
+                    <Text style={styles.deltaText}>{Math.abs(weightDelta).toFixed(1)} kg</Text>
                   </View>
                 )}
               </View>
@@ -116,19 +131,49 @@ export default function BodyLogScreen() {
             </View>
 
             {chartLogs.filter((l) => l.weight != null).length > 1 && (
-              <View style={styles.chartCard}>
-                <Text style={styles.chartLabel}>WEIGHT TREND</Text>
-                <View style={styles.chartRow}>
-                  {chartLogs.map((log, idx) => {
-                    if (log.weight == null) return <View key={idx} style={styles.chartCol} />;
-                    const heightPct = ((log.weight - minWeight) / range) * 60 + 10;
-                    return (
-                      <View key={idx} style={styles.chartCol}>
-                        <View style={[styles.chartBar, { height: heightPct }]} />
-                      </View>
-                    );
-                  })}
-                </View>
+              <View style={styles.lineChartCard}>
+                <LineChart
+                  data={{
+                    labels: chartLogs
+                      .filter((l) => l.weight != null)
+                      .map((l) => {
+                        const d = new Date(l.date.replace(' ', 'T'));
+                        return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                      }),
+                    datasets: [
+                      {
+                        data: chartLogs.filter((l) => l.weight != null).map((l) => l.weight),
+                      },
+                    ],
+                  }}
+                  width={screenWidth - 40}
+                  height={220}
+                  yAxisSuffix="kg"
+                  withVerticalLines={false}
+                  withOuterLines={false}
+                  chartConfig={{
+                    backgroundColor: COLORS.card,
+                    backgroundGradientFrom: COLORS.card,
+                    backgroundGradientTo: COLORS.card,
+                    decimalPlaces: 1,
+                    color: (opacity = 1) => `rgba(0, 210, 211, ${opacity})`,
+                    labelColor: (opacity = 1) => `rgba(124, 141, 175, ${opacity})`,
+                    propsForDots: {
+                      r: '5',
+                      strokeWidth: '2',
+                      stroke: COLORS.accent,
+                    },
+                    propsForBackgroundLines: {
+                      strokeDasharray: '4 4',
+                      stroke: 'rgba(124,141,175,0.15)',
+                    },
+                  }}
+                  bezier
+                  style={{
+                    marginVertical: 8,
+                    borderRadius: 18,
+                  }}
+                />
               </View>
             )}
 
@@ -146,30 +191,96 @@ export default function BodyLogScreen() {
             <Text style={styles.emptyStateText}>No entries yet</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.logRow} onLongPress={() => handleDelete(item.id)} activeOpacity={0.7}>
-            <Text style={styles.logDate}>{formatDate(item.date)}</Text>
-            <View style={styles.logValues}>
-              {item.weight != null && <Text style={styles.logValueText}>{item.weight} lb</Text>}
-              {item.body_fat != null && <Text style={styles.logValueTextSecondary}>{item.body_fat}%</Text>}
-            </View>
-          </TouchableOpacity>
-        )}
+        renderItem={({ item }) => {
+          const isExpanded = expandedLogId === item.id;
+          const displayDate = item.date ? item.date.split(' ')[0] : ''; 
+
+          return (
+            <TouchableOpacity 
+              style={styles.minimalRowContainer} 
+              onPress={() => setExpandedLogId(isExpanded ? null : item.id)}
+              onLongPress={() => handleDelete(item.id)} 
+              activeOpacity={0.6}
+            >
+              <View style={styles.minimalRowMain}>
+                <Text style={styles.minimalRowDate}>{displayDate}</Text>
+                <Text style={styles.minimalRowWeight}>{item.weight}kg</Text>
+              </View>
+              
+              {isExpanded && (
+                <View style={styles.expandedMeasurementsBox}>
+                  <View style={styles.measurementItem}>
+                    <Text style={styles.measurementLabel}>Chest</Text>
+                    <Text style={styles.measurementValue}>
+                      {item.chest ? `${item.chest} cm` : '--'}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.measurementItem}>
+                    <Text style={styles.measurementLabel}>Waist</Text>
+                    <Text style={styles.measurementValue}>
+                      {item.waist ? `${item.waist} cm` : '--'}
+                    </Text>
+                  </View>
+                  
+                  <View style={styles.measurementItem}>
+                    <Text style={styles.measurementLabel}>Arms</Text>
+                    <Text style={styles.measurementValue}>
+                      {item.arms ? `${item.arms} cm` : '--'}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        }}
       />
 
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>New Body Log</Text>
-            <Text style={styles.modalInputLabel}>WEIGHT (LB)</Text>
+            
+            <Text style={styles.modalInputLabel}>WEIGHT (KG)</Text>
             <TextInput
               style={styles.modalInput}
               keyboardType="decimal-pad"
-              placeholder="e.g. 175"
+              placeholder="e.g. 75"
               placeholderTextColor={COLORS.textSecondary}
               value={weightInput}
               onChangeText={setWeightInput}
             />
+            
+            <Text style={styles.modalInputLabel}>CHEST (CM)</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="decimal-pad"
+              placeholder="Optional"
+              placeholderTextColor={COLORS.textSecondary}
+              value={chestInput}
+              onChangeText={setChestInput}
+            />
+
+            <Text style={styles.modalInputLabel}>WAIST (CM)</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="decimal-pad"
+              placeholder="Optional"
+              placeholderTextColor={COLORS.textSecondary}
+              value={waistInput}
+              onChangeText={setWaistInput}
+            />
+
+            <Text style={styles.modalInputLabel}>ARMS (CM)</Text>
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="decimal-pad"
+              placeholder="Optional"
+              placeholderTextColor={COLORS.textSecondary}
+              value={armsInput}
+              onChangeText={setArmsInput}
+            />
+            
             <Text style={styles.modalInputLabel}>BODY FAT %</Text>
             <TextInput
               style={styles.modalInput}
@@ -179,12 +290,16 @@ export default function BodyLogScreen() {
               value={bodyFatInput}
               onChangeText={setBodyFatInput}
             />
+            
             <View style={styles.modalButtonRow}>
               <TouchableOpacity
                 style={styles.modalCancelButton}
                 onPress={() => {
                   setWeightInput('');
                   setBodyFatInput('');
+                  setChestInput('');
+                  setWaistInput('');
+                  setArmsInput('');
                   setModalVisible(false);
                 }}
               >
@@ -216,11 +331,13 @@ const styles = StyleSheet.create({
   summaryValue: { color: COLORS.textPrimary, fontSize: 24, fontWeight: '800', marginTop: 6 },
   deltaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
   deltaText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 4 },
-  chartCard: { backgroundColor: COLORS.card, borderRadius: 18, padding: 16, marginBottom: 16 },
-  chartLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 14 },
-  chartRow: { flexDirection: 'row', alignItems: 'flex-end', height: 70, justifyContent: 'space-between' },
-  chartCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: 70 },
-  chartBar: { width: 8, borderRadius: 4, backgroundColor: COLORS.accent },
+  lineChartCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    paddingVertical: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+  },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -237,19 +354,51 @@ const styles = StyleSheet.create({
   sectionLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
   emptyState: { alignItems: 'center', paddingVertical: 32 },
   emptyStateText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600', marginTop: 10 },
-  logRow: {
+  minimalRowContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(124, 141, 175, 0.2)', 
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+  },
+  minimalRowMain: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
   },
-  logDate: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '700' },
-  logValues: { flexDirection: 'row' },
-  logValueText: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '700', marginLeft: 14 },
-  logValueTextSecondary: { color: COLORS.accent, fontSize: 13, fontWeight: '700', marginLeft: 14 },
+  minimalRowDate: {
+    color: 'rgba(124, 141, 175, 0.8)', 
+    fontSize: 15,
+    letterSpacing: 0.5,
+  },
+  minimalRowWeight: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  expandedMeasurementsBox: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    backgroundColor: 'rgba(0, 210, 211, 0.05)', 
+    padding: 12,
+    borderRadius: 8,
+  },
+  measurementItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  measurementLabel: {
+    color: 'rgba(124, 141, 175, 0.9)',
+    fontSize: 12,
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  measurementValue: {
+    color: '#00d2d3', 
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',

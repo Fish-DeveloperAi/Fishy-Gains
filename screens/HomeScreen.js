@@ -155,16 +155,21 @@ export default function HomeScreen({ navigation }) {
               <Ionicons name="trophy" size={16} color={COLORS.accent} />
             </View>
             {recentPRs.map((pr) => (
-              <View key={pr.id} style={styles.prRow}>
+              <TouchableOpacity 
+                key={pr.id} 
+                style={styles.prRow}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('ExerciseHistory', { exerciseId: pr.exercise_id })}
+              >
                 <View style={styles.prIconWrap}>
                   <Ionicons name="trending-up" size={16} color={COLORS.accent} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.prExerciseName}>{pr.exercise_name}</Text>
-                  <Text style={styles.prDetail}>{pr.weight} lb × {pr.reps} reps</Text>
+                  <Text style={styles.prDetail}>{pr.weight} kg × {pr.reps} reps</Text>
                 </View>
                 <Text style={styles.prDate}>{formatRelativeDate(pr.workout_date)}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -192,6 +197,7 @@ export default function HomeScreen({ navigation }) {
               key={workout.id}
               style={styles.workoutCard}
               activeOpacity={0.8}
+              onPress={() => navigation.navigate('WorkoutSummary', { workoutId: workout.id })}
               onLongPress={() => handleDeleteWorkout(workout.id)}
             >
               <View style={styles.workoutCardHeader}>
@@ -210,7 +216,7 @@ export default function HomeScreen({ navigation }) {
                 </View>
                 <View style={styles.workoutCardStat}>
                   <Ionicons name="barbell-outline" size={14} color={COLORS.textSecondary} />
-                  <Text style={styles.workoutCardStatText}>{Math.round(workout.totalVolume).toLocaleString()} lb</Text>
+                  <Text style={styles.workoutCardStatText}>{Math.round(workout.totalVolume).toLocaleString()} kg</Text>
                 </View>
                 <View style={styles.workoutCardStat}>
                   <Ionicons name="layers-outline" size={14} color={COLORS.textSecondary} />

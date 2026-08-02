@@ -114,7 +114,7 @@ export default function FinishWorkoutScreen({ route, navigation }) {
             <View style={styles.statCard}>
               <Ionicons name="barbell-outline" size={20} color={COLORS.accent} />
               <Text style={styles.statValue}>{Math.round(workout.totalVolume).toLocaleString()}</Text>
-              <Text style={styles.statLabel}>Volume (lb)</Text>
+              <Text style={styles.statLabel}>Volume (kg)</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="layers-outline" size={20} color={COLORS.accent} />
@@ -154,7 +154,7 @@ export default function FinishWorkoutScreen({ route, navigation }) {
               <Text style={styles.exerciseSummaryName}>{ex.exerciseName}</Text>
               <Text style={styles.exerciseSummaryMeta}>
                 {ex.sets.length} set{ex.sets.length !== 1 ? 's' : ''} ·{' '}
-                {ex.sets.reduce((sum, s) => sum + s.weight * s.reps, 0).toLocaleString()} lb volume
+                {ex.sets.reduce((sum, s) => sum + s.weight * s.reps, 0).toLocaleString()} kg volume
               </Text>
             </View>
           ))}
