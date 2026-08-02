@@ -9,67 +9,67 @@ export function getDb() {
   return db;
 }
 
+// Added the exact image folder names as a 4th parameter
 const DEFAULT_EXERCISES = [
-  ['Barbell Bench Press', 'Chest', 'Barbell'],
-  ['Incline Barbell Bench Press', 'Chest', 'Barbell'],
-  ['Dumbbell Bench Press', 'Chest', 'Dumbbell'],
-  ['Incline Dumbbell Press', 'Chest', 'Dumbbell'],
-  ['Dumbbell Fly', 'Chest', 'Dumbbell'],
-  ['Cable Crossover', 'Chest', 'Cable'],
-  ['Push Up', 'Chest', 'Bodyweight'],
-  ['Dips', 'Chest', 'Bodyweight'],
-  ['Barbell Squat', 'Legs', 'Barbell'],
-  ['Front Squat', 'Legs', 'Barbell'],
-  ['Leg Press', 'Legs', 'Machine'],
-  ['Romanian Deadlift', 'Legs', 'Barbell'],
-  ['Leg Curl', 'Legs', 'Machine'],
-  ['Leg Extension', 'Legs', 'Machine'],
-  ['Walking Lunge', 'Legs', 'Dumbbell'],
-  ['Bulgarian Split Squat', 'Legs', 'Dumbbell'],
-  ['Standing Calf Raise', 'Legs', 'Machine'],
-  ['Hip Thrust', 'Legs', 'Barbell'],
-  ['Deadlift', 'Back', 'Barbell'],
-  ['Sumo Deadlift', 'Back', 'Barbell'],
-  ['Pull Up', 'Back', 'Bodyweight'],
-  ['Chin Up', 'Back', 'Bodyweight'],
-  ['Lat Pulldown', 'Back', 'Cable'],
-  ['Barbell Row', 'Back', 'Barbell'],
-  ['Dumbbell Row', 'Back', 'Dumbbell'],
-  ['Seated Cable Row', 'Back', 'Cable'],
-  ['T-Bar Row', 'Back', 'Barbell'],
-  ['Face Pull', 'Back', 'Cable'],
-  ['Overhead Press', 'Shoulders', 'Barbell'],
-  ['Seated Dumbbell Press', 'Shoulders', 'Dumbbell'],
-  ['Arnold Press', 'Shoulders', 'Dumbbell'],
-  ['Lateral Raise', 'Shoulders', 'Dumbbell'],
-  ['Front Raise', 'Shoulders', 'Dumbbell'],
-  ['Rear Delt Fly', 'Shoulders', 'Dumbbell'],
-  ['Shrug', 'Shoulders', 'Barbell'],
-  ['Barbell Curl', 'Arms', 'Barbell'],
-  ['Dumbbell Curl', 'Arms', 'Dumbbell'],
-  ['Hammer Curl', 'Arms', 'Dumbbell'],
-  ['Preacher Curl', 'Arms', 'Barbell'],
-  ['Cable Curl', 'Arms', 'Cable'],
-  ['Close Grip Bench Press', 'Arms', 'Barbell'],
-  ['Tricep Pushdown', 'Arms', 'Cable'],
-  ['Overhead Tricep Extension', 'Arms', 'Dumbbell'],
-  ['Skull Crusher', 'Arms', 'Barbell'],
-  ['Plank', 'Core', 'Bodyweight'],
-  ['Hanging Leg Raise', 'Core', 'Bodyweight'],
-  ['Cable Crunch', 'Core', 'Cable'],
-  ['Russian Twist', 'Core', 'Bodyweight'],
-  ['Ab Wheel Rollout', 'Core', 'Bodyweight'],
-  ['Sit Up', 'Core', 'Bodyweight'],
-  ['Treadmill Run', 'Cardio', 'Machine'],
-  ['Stationary Bike', 'Cardio', 'Machine'],
-  ['Rowing Machine', 'Cardio', 'Machine'],
-  ['Jump Rope', 'Cardio', 'Bodyweight'],
+  ['Barbell Bench Press', 'Chest', 'Barbell', 'Barbell_Bench_Press_-_Medium_Grip'],
+  ['Incline Barbell Bench Press', 'Chest', 'Barbell', 'Barbell_Incline_Bench_Press_-_Medium_Grip'],
+  ['Dumbbell Bench Press', 'Chest', 'Dumbbell', 'Dumbbell_Bench_Press'],
+  ['Incline Dumbbell Press', 'Chest', 'Dumbbell', 'Incline_Dumbbell_Press'],
+  ['Dumbbell Fly', 'Chest', 'Dumbbell', 'Dumbbell_Flyes'],
+  ['Cable Crossover', 'Chest', 'Cable', 'Cable_Crossover'],
+  ['Push Up', 'Chest', 'Bodyweight', 'Pushups'],
+  ['Dips', 'Chest', 'Bodyweight', 'Dips_-_Chest_Version'],
+  ['Barbell Squat', 'Legs', 'Barbell', 'Barbell_Squat'],
+  ['Front Squat', 'Legs', 'Barbell', 'Front_Barbell_Squat'],
+  ['Leg Press', 'Legs', 'Machine', 'Leg_Press'],
+  ['Romanian Deadlift', 'Legs', 'Barbell', 'Romanian_Deadlift'],
+  ['Leg Curl', 'Legs', 'Machine', 'Seated_Leg_Curl'],
+  ['Leg Extension', 'Legs', 'Machine', 'Leg_Extensions'],
+  ['Walking Lunge', 'Legs', 'Dumbbell', 'Barbell_Walking_Lunge'],
+  ['Bulgarian Split Squat', 'Legs', 'Dumbbell', 'Barbell_Side_Split_Squat'],
+  ['Standing Calf Raise', 'Legs', 'Machine', 'Standing_Calf_Raises'],
+  ['Hip Thrust', 'Legs', 'Barbell', 'Barbell_Hip_Thrust'],
+  ['Deadlift', 'Back', 'Barbell', 'Barbell_Deadlift'],
+  ['Sumo Deadlift', 'Back', 'Barbell', 'Sumo_Deadlift'],
+  ['Pull Up', 'Back', 'Bodyweight', 'Pullups'],
+  ['Chin Up', 'Back', 'Bodyweight', 'Chin-Up'],
+  ['Lat Pulldown', 'Back', 'Cable', 'Wide-Grip_Lat_Pulldown'],
+  ['Barbell Row', 'Back', 'Barbell', 'Bent_Over_Barbell_Row'],
+  ['Dumbbell Row', 'Back', 'Dumbbell', 'Bent_Over_Two-Dumbbell_Row'],
+  ['Seated Cable Row', 'Back', 'Cable', 'Seated_Cable_Rows'],
+  ['T-Bar Row', 'Back', 'Barbell', 'T-Bar_Row_with_Handle'],
+  ['Face Pull', 'Back', 'Cable', 'Face_Pull'],
+  ['Overhead Press', 'Shoulders', 'Barbell', 'Barbell_Shoulder_Press'],
+  ['Seated Dumbbell Press', 'Shoulders', 'Dumbbell', 'Seated_Dumbbell_Press'],
+  ['Arnold Press', 'Shoulders', 'Dumbbell', 'Arnold_Dumbbell_Press'],
+  ['Lateral Raise', 'Shoulders', 'Dumbbell', 'Side_Lateral_Raise'],
+  ['Front Raise', 'Shoulders', 'Dumbbell', 'Front_Dumbbell_Raise'],
+  ['Rear Delt Fly', 'Shoulders', 'Dumbbell', 'Reverse_Flyes'],
+  ['Shrug', 'Shoulders', 'Barbell', 'Barbell_Shrug'],
+  ['Barbell Curl', 'Arms', 'Barbell', 'Barbell_Curl'],
+  ['Dumbbell Curl', 'Arms', 'Dumbbell', 'Dumbbell_Bicep_Curl'],
+  ['Hammer Curl', 'Arms', 'Dumbbell', 'Hammer_Curls'],
+  ['Preacher Curl', 'Arms', 'Barbell', 'Preacher_Curl'],
+  ['Cable Curl', 'Arms', 'Cable', 'Cable_Curls'],
+  ['Close Grip Bench Press', 'Arms', 'Barbell', 'Close-Grip_Barbell_Bench_Press'],
+  ['Tricep Pushdown', 'Arms', 'Cable', 'Triceps_Pushdown'],
+  ['Overhead Tricep Extension', 'Arms', 'Dumbbell', 'Dumbbell_One-Arm_Triceps_Extension'],
+  ['Skull Crusher', 'Arms', 'Barbell', 'EZ-Bar_Skullcrusher'],
+  ['Plank', 'Core', 'Bodyweight', 'Plank'],
+  ['Hanging Leg Raise', 'Core', 'Bodyweight', 'Hanging_Leg_Raise'],
+  ['Cable Crunch', 'Core', 'Cable', 'Cable_Crunch'],
+  ['Russian Twist', 'Core', 'Bodyweight', 'Russian_Twist'],
+  ['Ab Wheel Rollout', 'Core', 'Bodyweight', 'Ab_Roller'],
+  ['Sit Up', 'Core', 'Bodyweight', 'Sit-Up'],
+  ['Treadmill Run', 'Cardio', 'Machine', 'Running_Treadmill'],
+  ['Stationary Bike', 'Cardio', 'Machine', 'Bicycling_Stationary'],
+  ['Rowing Machine', 'Cardio', 'Machine', 'Rowing_Stationary'],
+  ['Jump Rope', 'Cardio', 'Bodyweight', 'Rope_Jumping'],
 ];
 
-// One-time migration that converts historical lbs values to kg.
-// Tracked in the `migrations` table so it only ever runs once per install.
 const LBS_TO_KG = 0.453592;
 const METRIC_MIGRATION_NAME = 'lbs_to_kg_v1';
+const IMAGE_MIGRATION_NAME = 'add_exercise_images_v1';
 
 export function initDatabase() {
   const database = getDb();
@@ -92,6 +92,13 @@ export function initDatabase() {
       is_custom INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  // Dynamically add the image column if it doesn't exist
+  const exerciseCols = database.getAllSync("PRAGMA table_info(exercises);");
+  const hasImageCol = exerciseCols.some(col => col.name === 'image');
+  if (!hasImageCol) {
+    database.execSync('ALTER TABLE exercises ADD COLUMN image TEXT;');
+  }
 
   database.execSync(`
     CREATE TABLE IF NOT EXISTS routines (
@@ -141,8 +148,6 @@ export function initDatabase() {
     );
   `);
 
-  // Body log now also tracks chest / waist / arm measurements (cm), alongside
-  // weight (kg) and body fat (%).
   database.execSync(`
     CREATE TABLE IF NOT EXISTS body_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,15 +159,15 @@ export function initDatabase() {
       arms REAL
     );
   `);
-    // Check if the chest column exists to prevent running this multiple times
-    const bodyLogCols = database.getAllSync("PRAGMA table_info(body_logs);");
-    const hasChest = bodyLogCols.some(col => col.name === 'chest');
 
-    if (!hasChest) {
-      database.execSync('ALTER TABLE body_logs ADD COLUMN chest REAL;');
-      database.execSync('ALTER TABLE body_logs ADD COLUMN waist REAL;');
-      database.execSync('ALTER TABLE body_logs ADD COLUMN arms REAL;');
-    }
+  const bodyLogCols = database.getAllSync("PRAGMA table_info(body_logs);");
+  const hasChest = bodyLogCols.some(col => col.name === 'chest');
+
+  if (!hasChest) {
+    database.execSync('ALTER TABLE body_logs ADD COLUMN chest REAL;');
+    database.execSync('ALTER TABLE body_logs ADD COLUMN waist REAL;');
+    database.execSync('ALTER TABLE body_logs ADD COLUMN arms REAL;');
+  }
 
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_routine_exercises_routine ON routine_exercises(routine_id);`);
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_sets_workout ON sets(workout_id);`);
@@ -170,22 +175,22 @@ export function initDatabase() {
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_workouts_date ON workouts(date);`);
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_exercises_muscle ON exercises(muscle_group);`);
 
+  // Handle fresh installs
   const countRow = database.getFirstSync('SELECT COUNT(*) as count FROM exercises;');
   if (countRow.count === 0) {
-    DEFAULT_EXERCISES.forEach(([name, muscleGroup, category]) => {
+    DEFAULT_EXERCISES.forEach(([name, muscleGroup, category, imageId]) => {
       database.runSync(
-        'INSERT INTO exercises (name, muscle_group, category, is_custom) VALUES (?, ?, ?, 0);',
-        [name, muscleGroup, category]
+        'INSERT INTO exercises (name, muscle_group, category, is_custom, image) VALUES (?, ?, ?, 0, ?);',
+        [name, muscleGroup, category, imageId || null]
       );
     });
   }
 
+  // Handle updates for existing users
   runMetricMigration(database);
+  runImageMigration(database);
 }
 
-// Converts every existing weight value (sets + body_logs) from lbs to kg,
-// exactly once. Guarded by the `migrations` table so re-running initDatabase
-// on subsequent app launches is a safe no-op.
 function runMetricMigration(database) {
   const alreadyApplied = database.getFirstSync(
     'SELECT id FROM migrations WHERE name = ?;',
@@ -197,6 +202,24 @@ function runMetricMigration(database) {
     database.runSync('UPDATE sets SET weight = weight * ?;', [LBS_TO_KG]);
     database.runSync('UPDATE body_logs SET weight = weight * ? WHERE weight IS NOT NULL;', [LBS_TO_KG]);
     database.runSync('INSERT INTO migrations (name) VALUES (?);', [METRIC_MIGRATION_NAME]);
+  });
+}
+
+// Maps existing database rows to their exact image folder identifiers safely
+function runImageMigration(database) {
+  const alreadyApplied = database.getFirstSync(
+    'SELECT id FROM migrations WHERE name = ?;',
+    [IMAGE_MIGRATION_NAME]
+  );
+  if (alreadyApplied) return;
+
+  database.withTransactionSync(() => {
+    DEFAULT_EXERCISES.forEach(([name, muscleGroup, category, imageId]) => {
+      if (imageId) {
+        database.runSync('UPDATE exercises SET image = ? WHERE name = ? AND is_custom = 0;', [imageId, name]);
+      }
+    });
+    database.runSync('INSERT INTO migrations (name) VALUES (?);', [IMAGE_MIGRATION_NAME]);
   });
 }
 
@@ -633,10 +656,6 @@ export function getRecentPRs(limit = 5) {
 
 // ---------- BODY LOGS ----------
 
-// Signature extended (per requirement 4) to accept the new chest/waist/arms
-// measurements. weight is expected in kg, chest/waist/arms in cm. All three
-// new params default to null so existing callers that only pass
-// (weight, bodyFat) keep working without changes.
 export function addBodyLog(weight, bodyFat, chest = null, waist = null, arms = null) {
   const database = getDb();
   const result = database.runSync(
