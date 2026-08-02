@@ -60,7 +60,7 @@ const ShareableWorkoutCard = React.forwardRef(function ShareableWorkoutCard(
         <View style={styles.statBox}>
           <Ionicons name="barbell-outline" size={20} color={COLORS.accent} />
           <Text style={styles.statValue}>{Math.round(totalVolume).toLocaleString()}</Text>
-          <Text style={styles.statLabel}>Volume (lb)</Text>
+          <Text style={styles.statLabel}>Volume (kg)</Text>
         </View>
         <View style={styles.statBox}>
           <Ionicons name="layers-outline" size={20} color={COLORS.accent} />

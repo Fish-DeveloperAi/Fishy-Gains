@@ -342,7 +342,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
 
               <View style={styles.inputRow}>
                 <View style={styles.inputBox}>
-                  <Text style={styles.inputLabel}>WEIGHT (LB)</Text>
+                  <Text style={styles.inputLabel}>WEIGHT (KG)</Text>
                   <TextInput
                     style={styles.input}
                     keyboardType="decimal-pad"

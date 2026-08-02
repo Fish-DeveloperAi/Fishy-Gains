@@ -66,9 +66,22 @@ const DEFAULT_EXERCISES = [
   ['Jump Rope', 'Cardio', 'Bodyweight'],
 ];
 
+// One-time migration that converts historical lbs values to kg.
+// Tracked in the `migrations` table so it only ever runs once per install.
+const LBS_TO_KG = 0.453592;
+const METRIC_MIGRATION_NAME = 'lbs_to_kg_v1';
+
 export function initDatabase() {
   const database = getDb();
   database.execSync('PRAGMA foreign_keys = ON;');
+
+  database.execSync(`
+    CREATE TABLE IF NOT EXISTS migrations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
 
   database.execSync(`
     CREATE TABLE IF NOT EXISTS exercises (
@@ -128,14 +141,28 @@ export function initDatabase() {
     );
   `);
 
+  // Body log now also tracks chest / waist / arm measurements (cm), alongside
+  // weight (kg) and body fat (%).
   database.execSync(`
     CREATE TABLE IF NOT EXISTS body_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date TEXT NOT NULL DEFAULT (datetime('now')),
       weight REAL,
-      body_fat REAL
+      body_fat REAL,
+      chest REAL,
+      waist REAL,
+      arms REAL
     );
   `);
+    // Check if the chest column exists to prevent running this multiple times
+    const bodyLogCols = database.getAllSync("PRAGMA table_info(body_logs);");
+    const hasChest = bodyLogCols.some(col => col.name === 'chest');
+
+    if (!hasChest) {
+      database.execSync('ALTER TABLE body_logs ADD COLUMN chest REAL;');
+      database.execSync('ALTER TABLE body_logs ADD COLUMN waist REAL;');
+      database.execSync('ALTER TABLE body_logs ADD COLUMN arms REAL;');
+    }
 
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_routine_exercises_routine ON routine_exercises(routine_id);`);
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_sets_workout ON sets(workout_id);`);
@@ -152,6 +179,25 @@ export function initDatabase() {
       );
     });
   }
+
+  runMetricMigration(database);
+}
+
+// Converts every existing weight value (sets + body_logs) from lbs to kg,
+// exactly once. Guarded by the `migrations` table so re-running initDatabase
+// on subsequent app launches is a safe no-op.
+function runMetricMigration(database) {
+  const alreadyApplied = database.getFirstSync(
+    'SELECT id FROM migrations WHERE name = ?;',
+    [METRIC_MIGRATION_NAME]
+  );
+  if (alreadyApplied) return;
+
+  database.withTransactionSync(() => {
+    database.runSync('UPDATE sets SET weight = weight * ?;', [LBS_TO_KG]);
+    database.runSync('UPDATE body_logs SET weight = weight * ? WHERE weight IS NOT NULL;', [LBS_TO_KG]);
+    database.runSync('INSERT INTO migrations (name) VALUES (?);', [METRIC_MIGRATION_NAME]);
+  });
 }
 
 // ---------- EXERCISES ----------
@@ -587,11 +633,16 @@ export function getRecentPRs(limit = 5) {
 
 // ---------- BODY LOGS ----------
 
-export function addBodyLog(weight, bodyFat) {
+// Signature extended (per requirement 4) to accept the new chest/waist/arms
+// measurements. weight is expected in kg, chest/waist/arms in cm. All three
+// new params default to null so existing callers that only pass
+// (weight, bodyFat) keep working without changes.
+export function addBodyLog(weight, bodyFat, chest = null, waist = null, arms = null) {
   const database = getDb();
   const result = database.runSync(
-    'INSERT INTO body_logs (date, weight, body_fat) VALUES (datetime(\'now\'), ?, ?);',
-    [weight, bodyFat]
+    `INSERT INTO body_logs (date, weight, body_fat, chest, waist, arms)
+     VALUES (datetime('now'), ?, ?, ?, ?, ?);`,
+    [weight, bodyFat, chest, waist, arms]
   );
   return result.lastInsertRowId;
 }

@@ -18,6 +18,8 @@ import LogWorkoutScreen from './screens/LogWorkoutScreen';
 import FinishWorkoutScreen from './screens/FinishWorkoutScreen';
 import BodyLogScreen from './screens/BodyLogScreen';
 import ExerciseHistoryScreen from './screens/ExerciseHistoryScreen';
+import WorkoutSummaryScreen from './screens/WorkoutSummaryScreen';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -99,6 +101,7 @@ export default function App() {
           <Stack.Screen name="FinishWorkout" component={FinishWorkoutScreen} options={{ title: 'Workout Complete', headerBackVisible: false, gestureEnabled: false }} />
           <Stack.Screen name="BodyLog" component={BodyLogScreen} options={{ title: 'Body Tracking' }} />
           <Stack.Screen name="ExerciseHistory" component={ExerciseHistoryScreen} options={{ title: 'Exercise History' }} />
+          <Stack.Screen name="WorkoutSummary" component={WorkoutSummaryScreen} options={{ title: 'Workout Summary' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

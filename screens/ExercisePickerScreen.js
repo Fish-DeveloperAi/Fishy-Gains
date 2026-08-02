@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   filterChip: {
     backgroundColor: COLORS.card,
     borderRadius: 20,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     marginRight: 8,
     justifyContent: 'center',
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   filterChipActive: { backgroundColor: COLORS.accent },
   filterChipText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600',includeFontPadding: false,
-    textAlignVertical: 'center', },
+    textAlignVertical: 'center',lineHeight: 18, },
   filterChipTextActive: { color: '#0B1D3A', fontWeight: '800' },
   listContent: { padding: 20, paddingBottom: 100 },
   emptyState: { alignItems: 'center', paddingVertical: 32 },
