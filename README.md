@@ -8,7 +8,7 @@
 
 Fishy Gains is a modern workout tracker built with **React Native** and **Expo**, designed for bodybuilders, powerlifters, and fitness enthusiasts who want a fast, distraction-free training experience.
 
-Featuring a **hybrid exercise library** with over **800 built-in exercises**, workout routines, progress analytics, body tracking, and complete offline functionality, Fishy Gains keeps you focused on training—not internet connectivity.
+Featuring a **hybrid exercise library** with over **800 built-in exercises**, workout routines, progress analytics, body tracking, an Ocean Rank progression system, 13 customizable themes, and complete offline functionality, Fishy Gains keeps you focused on training—not internet connectivity.
 
 [![Download APK](https://img.shields.io/badge/Download-Android_APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Fish-DeveloperAi/Fishy-Gains/releases)
 
@@ -112,6 +112,44 @@ Monitor changes over time by logging:
 - Chest
 - Waist
 - Arms
+
+---
+
+### 🐋 Ocean Rank System
+
+A progression system based on your **Big Three Total** (Squat + Bench Press + Deadlift). Climb ocean-inspired ranks as your strength increases, with live progress tracking toward your next rank.
+
+| Total | Rank |
+|------:|------|
+| 0 kg | 🦐 Shrimp |
+| 100 kg | 🐟 Sardine |
+| 200 kg | 🐠 Mackerel |
+| 300 kg | 🐡 Tuna |
+| 400 kg | 🦈 Shark |
+| 500 kg | 🐬 Dolphin |
+| 600 kg | 🐳 Orca |
+| 700 kg | 🐋 Sperm Whale |
+| 800 kg+ | 👑 Leviathan |
+
+---
+
+### 🎨 Theme Customization
+
+Personalize the app with **13 unique themes**, each with its own carefully designed color palette. Your selection is saved automatically and restored on every launch.
+
+- Ocean (Default)
+- Sakura
+- Cyberpunk
+- Forest
+- Inferno
+- Midnight
+- Galaxy
+- iOS Light
+- iOS Dark
+- Neon
+- Book
+- Blossom
+- Celestial Dragon
 
 ---
 
@@ -235,26 +273,9 @@ Sync workouts and body measurements with Apple Health.
 
 Keep your workout history synchronized with Google Fit.
 
-### 🏆 Ocean Rank System
+### 🎭 More Themes
 
-A unique progression system based on your **Big Three Total**:
-
-- Squat
-- Bench Press
-- Deadlift
-
-Unlock ocean-inspired ranks as your strength increases.
-
-| Total | Rank |
-|------:|------|
-| 100 kg | 🐟 Sardine |
-| 200 kg | 🐠 Mackerel |
-| 300 kg | 🐡 Tuna |
-| 400 kg | 🦈 Shark |
-| 500 kg | 🐬 Dolphin |
-| 600 kg | 🐋 Orca |
-| 700 kg | 🐋 Sperm Whale |
-| 800 kg+ | 👑 Leviathan |
+Additional theme packs, including further anime-inspired and book-inspired palettes.
 
 ---
 
