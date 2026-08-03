@@ -117,6 +117,7 @@ export function initDatabase() {
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_workouts_date ON workouts(date);`);
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_exercises_muscle ON exercises(muscle_group);`);
 
+  runSchemaMigration(database);
   runMetricMigration(database);
 }
 
@@ -666,4 +667,120 @@ export function getBodyLogs() {
 export function deleteBodyLog(id) {
   const database = getDb();
   database.runSync('DELETE FROM body_logs WHERE id = ?;', [id]);
+}
+
+// ---------- OCEAN RANK SYSTEM ----------
+
+export function getBigThreeStats() {
+  const database = getDb();
+  
+  // 1. Identify Exercise IDs for the Big Three
+  // We look for standard barbell movements to avoid counting bodyweight or machine variations
+  const squatIds = [];
+  const benchIds = [];
+  const deadliftIds = [];
+
+  // Search JSON data
+  exercisesData.forEach(e => {
+    const name = e.name.toLowerCase();
+    if (name.includes('barbell squat')) squatIds.push(e.id);
+    if (name.includes('barbell bench press')) benchIds.push(e.id);
+    if (name.includes('barbell deadlift')) deadliftIds.push(e.id);
+  });
+
+  // Search custom SQLite exercises
+  const customEx = database.getAllSync('SELECT id, name FROM exercises WHERE is_custom = 1;');
+  customEx.forEach(e => {
+    const name = e.name.toLowerCase();
+    if (name.includes('squat') && !name.includes('split') && !name.includes('hack')) squatIds.push(e.id);
+    if (name.includes('bench press') && !name.includes('dumbbell')) benchIds.push(e.id);
+    if (name.includes('deadlift') && !name.includes('romanian')) deadliftIds.push(e.id);
+  });
+
+  // 2. Helper to fetch the max weight logged for a set of IDs
+  const getMaxWeight = (ids) => {
+    if (ids.length === 0) return 0;
+    const placeholders = ids.map(() => '?').join(',');
+    // We only count completed sets
+    const query = `
+      SELECT MAX(weight) as maxWeight 
+      FROM sets 
+      WHERE exercise_id IN (${placeholders}) AND completed = 1;
+    `;
+    const row = database.getFirstSync(query, ids.map(String));
+    return row?.maxWeight || 0;
+  };
+
+  // 3. Calculate maxes and total
+  const squat = getMaxWeight(squatIds);
+  const bench = getMaxWeight(benchIds);
+  const deadlift = getMaxWeight(deadliftIds);
+  
+  return {
+    squat,
+    bench,
+    deadlift,
+    total: squat + bench + deadlift
+  };
+}
+
+
+
+const SCHEMA_MIGRATION_NAME = 'drop_exercise_fk_v1';
+
+function runSchemaMigration(database) {
+  // Check if we already migrated this user
+  const alreadyApplied = database.getFirstSync(
+    'SELECT id FROM migrations WHERE name = ?;',
+    [SCHEMA_MIGRATION_NAME]
+  );
+  if (alreadyApplied) return;
+
+  // 1. Temporarily disable foreign keys so we can safely drop tables
+  database.execSync('PRAGMA foreign_keys = OFF;');
+
+  database.withTransactionSync(() => {
+    // 2. Rebuild routine_exercises WITHOUT the exercise_id foreign key constraint
+    database.execSync(`
+      CREATE TABLE IF NOT EXISTS routine_exercises_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        routine_id INTEGER NOT NULL,
+        exercise_id TEXT NOT NULL,
+        order_index INTEGER NOT NULL DEFAULT 0,
+        target_sets INTEGER NOT NULL DEFAULT 3,
+        FOREIGN KEY (routine_id) REFERENCES routines(id) ON DELETE CASCADE
+      );
+    `);
+    
+    // Copy the user's data over, drop the old table, and rename the new one
+    database.execSync('INSERT INTO routine_exercises_new SELECT * FROM routine_exercises;');
+    database.execSync('DROP TABLE routine_exercises;');
+    database.execSync('ALTER TABLE routine_exercises_new RENAME TO routine_exercises;');
+
+    // 3. Rebuild sets WITHOUT the exercise_id foreign key constraint
+    database.execSync(`
+      CREATE TABLE IF NOT EXISTS sets_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        workout_id INTEGER NOT NULL,
+        exercise_id TEXT NOT NULL,
+        set_index INTEGER NOT NULL DEFAULT 0,
+        weight REAL NOT NULL DEFAULT 0,
+        reps INTEGER NOT NULL DEFAULT 0,
+        is_pr INTEGER NOT NULL DEFAULT 0,
+        completed INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE
+      );
+    `);
+    
+    // Copy data, drop old, rename new
+    database.execSync('INSERT INTO sets_new SELECT * FROM sets;');
+    database.execSync('DROP TABLE sets;');
+    database.execSync('ALTER TABLE sets_new RENAME TO sets;');
+
+    // 4. Mark migration as complete so it never runs again
+    database.runSync('INSERT INTO migrations (name) VALUES (?);', [SCHEMA_MIGRATION_NAME]);
+  });
+
+  // 5. Re-enable foreign keys to protect the rest of the database
+  database.execSync('PRAGMA foreign_keys = ON;');
 }

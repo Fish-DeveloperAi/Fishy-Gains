@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -16,18 +16,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { getRoutines, createRoutine, deleteRoutine, duplicateRoutine } from '../database/db';
-
-const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
+import { useTheme } from '../theme/ThemeContext';
 
 export default function RoutinesScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [routines, setRoutines] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [newRoutineName, setNewRoutineName] = useState('');
@@ -78,13 +72,13 @@ export default function RoutinesScreen({ navigation }) {
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
           <TouchableOpacity style={styles.newRoutineButton} onPress={() => setModalVisible(true)}>
-            <Ionicons name="add-circle" size={22} color={COLORS.accent} />
+            <Ionicons name="add-circle" size={22} color={colors.accent} />
             <Text style={styles.newRoutineText}>Create New Routine</Text>
           </TouchableOpacity>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="clipboard-outline" size={40} color={COLORS.textSecondary} />
+            <Ionicons name="clipboard-outline" size={40} color={colors.textSecondary} />
             <Text style={styles.emptyStateText}>No routines yet</Text>
             <Text style={styles.emptyStateSubtext}>Create one to start logging fast.</Text>
           </View>
@@ -107,13 +101,13 @@ export default function RoutinesScreen({ navigation }) {
                 style={styles.routineActionButton}
                 onPress={() => navigation.navigate('EditRoutine', { routineId: item.id })}
               >
-                <Ionicons name="pencil" size={18} color={COLORS.textSecondary} />
+                <Ionicons name="pencil" size={18} color={colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.routineActionButton} onPress={() => handleDuplicate(item.id)}>
-                <Ionicons name="copy-outline" size={18} color={COLORS.textSecondary} />
+                <Ionicons name="copy-outline" size={18} color={colors.textSecondary} />
               </TouchableOpacity>
               <TouchableOpacity style={styles.routineActionButton} onPress={() => handleDelete(item.id, item.name)}>
-                <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                <Ionicons name="trash-outline" size={18} color={colors.danger} />
               </TouchableOpacity>
             </View>
           </View>
@@ -130,7 +124,7 @@ export default function RoutinesScreen({ navigation }) {
             <TextInput
               style={styles.modalInput}
               placeholder="e.g. Push Day"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={newRoutineName}
               onChangeText={setNewRoutineName}
               autoFocus
@@ -158,14 +152,14 @@ export default function RoutinesScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   listContent: { padding: 20, paddingBottom: 40 },
   newRoutineButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     paddingVertical: 16,
     marginBottom: 20,
@@ -173,12 +167,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,210,211,0.3)',
     borderStyle: 'dashed',
   },
-  newRoutineText: { color: COLORS.accent, fontWeight: '700', fontSize: 15, marginLeft: 8 },
+  newRoutineText: { color: colors.accent, fontWeight: '700', fontSize: 15, marginLeft: 8 },
   emptyState: { alignItems: 'center', paddingVertical: 48 },
-  emptyStateText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 12 },
-  emptyStateSubtext: { color: COLORS.textSecondary, fontSize: 13, marginTop: 4 },
+  emptyStateText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 12 },
+  emptyStateSubtext: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
   routineCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     marginBottom: 12,
     flexDirection: 'row',
@@ -186,8 +180,8 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   routineCardMain: { flex: 1, padding: 16 },
-  routineName: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700' },
-  routineMeta: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600', marginTop: 4 },
+  routineName: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+  routineMeta: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginTop: 4 },
   routineActions: { flexDirection: 'row' },
   routineActionButton: {
     width: 36,
@@ -205,17 +199,17 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     width: '100%',
-    backgroundColor: COLORS.cardAlt,
+    backgroundColor: colors.cardAlt,
     borderRadius: 22,
     padding: 22,
   },
-  modalTitle: { color: COLORS.textPrimary, fontSize: 17, fontWeight: '800', marginBottom: 16 },
+  modalTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '800', marginBottom: 16 },
   modalInput: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 15,
   },
   modalButtonRow: { flexDirection: 'row', marginTop: 18 },
@@ -226,14 +220,14 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     marginRight: 8,
   },
-  modalCancelText: { color: COLORS.textSecondary, fontWeight: '700', fontSize: 15 },
+  modalCancelText: { color: colors.textSecondary, fontWeight: '700', fontSize: 15 },
   modalCreateButton: {
     flex: 1,
     paddingVertical: 14,
     alignItems: 'center',
     borderRadius: 14,
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     marginLeft: 8,
   },
-  modalCreateText: { color: '#0B1D3A', fontWeight: '800', fontSize: 15 },
+  modalCreateText: { color: colors.background, fontWeight: '800', fontSize: 15 },
 });

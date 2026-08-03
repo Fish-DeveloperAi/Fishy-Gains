@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,20 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
 
 import { getExerciseById, getExerciseHistory, getExercisePRs } from '../database/db';
+import { useTheme } from '../theme/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
 
-const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
-
 export default function ExerciseHistoryScreen({ route, navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { exerciseId } = route.params;
   const [exercise, setExercise] = useState(null);
   const [history, setHistory] = useState([]);
@@ -29,7 +23,6 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
     const ex = getExerciseById(exerciseId);
     setExercise(ex);
     
-    // Updated to match the "Progress" header in your screenshot
     if (ex) navigation.setOptions({ title: 'Progress' });
     
     setHistory(getExerciseHistory(exerciseId));
@@ -42,7 +35,6 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
     }, [loadData])
   );
 
-  // Flatten the grouped workout history into individual sets for the minimalist list and chart
   const flattenedHistory = [];
   history.forEach(workout => {
     workout.sets.forEach(set => {
@@ -53,7 +45,6 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
     });
   });
 
-  // Grab the most recent 10 sets for the chart and reverse them for left-to-right chronological order
   const chartSets = flattenedHistory.slice(0, 10).reverse();
 
   return (
@@ -91,22 +82,22 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
                       },
                     ],
                   }}
-                  width={screenWidth - 40} // Accounts for 20px padding on each side
+                  width={screenWidth - 40}
                   height={220}
                   yAxisSuffix="kg"
                   withVerticalLines={false}
                   withOuterLines={false}
                   chartConfig={{
-                    backgroundColor: COLORS.card,
-                    backgroundGradientFrom: COLORS.card,
-                    backgroundGradientTo: COLORS.card,
+                    backgroundColor: colors.card,
+                    backgroundGradientFrom: colors.card,
+                    backgroundGradientTo: colors.card,
                     decimalPlaces: 1,
-                    color: (opacity = 1) => `rgba(0, 210, 211, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(124, 141, 175, ${opacity})`,
+                    color: () => colors.accent,
+                    labelColor: () => colors.textSecondary,
                     propsForDots: {
                       r: '5',
                       strokeWidth: '2',
-                      stroke: COLORS.accent,
+                      stroke: colors.accent,
                     },
                     propsForBackgroundLines: {
                       strokeDasharray: '4 4',
@@ -125,12 +116,11 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="barbell-outline" size={36} color={COLORS.textSecondary} />
+            <Ionicons name="barbell-outline" size={36} color={colors.textSecondary} />
             <Text style={styles.emptyStateText}>No history for this exercise yet</Text>
           </View>
         }
         renderItem={({ item }) => {
-          // Extracts just the YYYY-MM-DD part to match your screenshot
           const displayDate = item.date ? item.date.split(' ')[0] : ''; 
           
           return (
@@ -147,17 +137,17 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors) => StyleSheet.create({
   safeArea: { 
     flex: 1, 
-    backgroundColor: COLORS.background 
+    backgroundColor: colors.background 
   },
   listContent: { 
     padding: 20, 
     paddingBottom: 40 
   },
   screenTitle: {
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
@@ -178,7 +168,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pbValue: {
-    color: '#00d2d3',
+    color: colors.accent,
     fontSize: 22,
     fontWeight: 'bold',
   },
@@ -187,7 +177,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   lineChartCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     paddingVertical: 16,
     marginBottom: 24, 
@@ -198,7 +188,7 @@ const styles = StyleSheet.create({
     paddingVertical: 32 
   },
   emptyStateText: { 
-    color: COLORS.textSecondary, 
+    color: colors.textSecondary, 
     fontSize: 14, 
     fontWeight: '600', 
     marginTop: 10, 
@@ -219,12 +209,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   minimalRowWeight: {
-    color: '#ffffff',
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
   minimalRowReps: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.textPrimary,
   },
 });

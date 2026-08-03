@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -22,16 +22,7 @@ import {
   getPreviousPerformance,
   getRoutineById,
 } from '../database/db';
-
-const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
+import { useTheme } from '../theme/ThemeContext';
 
 const DEFAULT_REST_SECONDS = 90;
 
@@ -42,6 +33,9 @@ function formatClock(totalSeconds) {
 }
 
 export default function LogWorkoutScreen({ route, navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { workoutId, routineId } = route.params;
 
   const [sessionExercises, setSessionExercises] = useState([]);
@@ -96,6 +90,13 @@ export default function LogWorkoutScreen({ route, navigation }) {
     }
     return () => interval && clearInterval(interval);
   }, [restRunning]);
+
+  useEffect(() => {
+    if (route.params?.selectedExercises) {
+      handleAddFreestyleExercises(route.params.selectedExercises);
+      navigation.setParams({ selectedExercises: undefined });
+    }
+  }, [route.params?.selectedExercises]);
 
   const currentExercise = sessionExercises[currentIndex];
 
@@ -236,7 +237,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
         <View>
           <Text style={styles.routineName} numberOfLines={1}>{routineName}</Text>
           <View style={styles.timerRow}>
-            <Ionicons name="stopwatch-outline" size={14} color={COLORS.accent} />
+            <Ionicons name="stopwatch-outline" size={14} color={colors.accent} />
             <Text style={styles.timerText}>{formatClock(elapsedSeconds)}</Text>
           </View>
         </View>
@@ -270,7 +271,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           {!currentExercise ? (
             <View style={styles.emptyState}>
-              <Ionicons name="barbell-outline" size={40} color={COLORS.textSecondary} />
+              <Ionicons name="barbell-outline" size={40} color={colors.textSecondary} />
               <Text style={styles.emptyStateText}>No exercises yet</Text>
               <Text style={styles.emptyStateSubtext}>Add an exercise to start logging sets.</Text>
             </View>
@@ -286,7 +287,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
                   <View style={styles.restHeaderRow}>
                     <Text style={styles.restLabel}>REST TIMER</Text>
                     <TouchableOpacity onPress={stopRest}>
-                      <Ionicons name="close" size={18} color={COLORS.textSecondary} />
+                      <Ionicons name="close" size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.restClock}>{formatClock(restRemaining)}</Text>
@@ -298,7 +299,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
                       <Text style={styles.restControlText}>-15s</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.restControlButtonPrimary} onPress={togglePauseRest}>
-                      <Ionicons name={restRunning ? 'pause' : 'play'} size={18} color="#0B1D3A" />
+                      <Ionicons name={restRunning ? 'pause' : 'play'} size={18} color={colors.background} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.restControlButton} onPress={() => adjustRest(15)}>
                       <Text style={styles.restControlText}>+15s</Text>
@@ -326,7 +327,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
                   >
                     <View style={{ flex: 0.6, flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={styles.setIndexText}>{idx + 1}</Text>
-                      {set.is_pr === 1 && <Ionicons name="trophy" size={13} color={COLORS.accent} style={{ marginLeft: 4 }} />}
+                      {set.is_pr === 1 && <Ionicons name="trophy" size={13} color={colors.accent} style={{ marginLeft: 4 }} />}
                     </View>
                     <Text style={[styles.setCellText, { flex: 1 }]}>
                       {prev ? `${prev.weight} × ${prev.reps}` : '—'}
@@ -334,7 +335,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
                     <Text style={[styles.setCellText, { flex: 1, fontWeight: '700' }]}>{set.weight}</Text>
                     <Text style={[styles.setCellText, { flex: 1, fontWeight: '700' }]}>{set.reps}</Text>
                     <TouchableOpacity style={{ width: 30, alignItems: 'center' }} onPress={() => handleDeleteSet(set.id)}>
-                      <Ionicons name="trash-outline" size={16} color={COLORS.danger} />
+                      <Ionicons name="trash-outline" size={16} color={colors.danger} />
                     </TouchableOpacity>
                   </TouchableOpacity>
                 );
@@ -347,7 +348,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
                     style={styles.input}
                     keyboardType="decimal-pad"
                     placeholder={previousSets[sets.length] ? String(previousSets[sets.length].weight) : '0'}
-                    placeholderTextColor={COLORS.textSecondary}
+                    placeholderTextColor={colors.textSecondary}
                     value={weightInput}
                     onChangeText={setWeightInput}
                   />
@@ -358,23 +359,23 @@ export default function LogWorkoutScreen({ route, navigation }) {
                     style={styles.input}
                     keyboardType="number-pad"
                     placeholder={previousSets[sets.length] ? String(previousSets[sets.length].reps) : '0'}
-                    placeholderTextColor={COLORS.textSecondary}
+                    placeholderTextColor={colors.textSecondary}
                     value={repsInput}
                     onChangeText={setRepsInput}
                   />
                 </View>
                 <TouchableOpacity style={styles.logButton} onPress={handleLogSet}>
-                  <Ionicons name={editingSetId ? 'checkmark' : 'add'} size={22} color="#0B1D3A" />
+                  <Ionicons name={editingSetId ? 'checkmark' : 'add'} size={22} color={colors.background} />
                 </TouchableOpacity>
               </View>
-
+              
               <TouchableOpacity
                 style={styles.addExerciseInline}
                 onPress={() =>
-                  navigation.navigate('ExercisePicker', { onSelect: handleAddFreestyleExercises })
+                  navigation.navigate('ExercisePicker', { returnScreen: 'LogWorkout' })
                 }
               >
-                <Ionicons name="add-circle-outline" size={18} color={COLORS.accent} />
+                <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
                 <Text style={styles.addExerciseInlineText}>Add Exercise</Text>
               </TouchableOpacity>
             </>
@@ -385,14 +386,14 @@ export default function LogWorkoutScreen({ route, navigation }) {
           <View style={styles.footer}>
             {currentIndex > 0 && (
               <TouchableOpacity style={styles.navButtonSecondary} onPress={goToPrevExercise}>
-                <Ionicons name="chevron-back" size={20} color={COLORS.textPrimary} />
+                <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.navButtonPrimary} onPress={goToNextExercise}>
               <Text style={styles.navButtonPrimaryText}>
                 {isLastExercise ? 'Finish Workout' : 'Next Exercise'}
               </Text>
-              <Ionicons name={isLastExercise ? 'checkmark-circle' : 'chevron-forward'} size={20} color="#0B1D3A" />
+              <Ionicons name={isLastExercise ? 'checkmark-circle' : 'chevron-forward'} size={20} color={colors.background} />
             </TouchableOpacity>
           </View>
         )}
@@ -401,8 +402,8 @@ export default function LogWorkoutScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -411,33 +412,33 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
   },
-  routineName: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '800', maxWidth: 220 },
+  routineName: { color: colors.textPrimary, fontSize: 18, fontWeight: '800', maxWidth: 220 },
   timerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  timerText: { color: COLORS.accent, fontSize: 13, fontWeight: '700', marginLeft: 5 },
+  timerText: { color: colors.accent, fontSize: 13, fontWeight: '700', marginLeft: 5 },
   finishTopButton: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingVertical: 9,
     paddingHorizontal: 16,
   },
-  finishTopButtonText: { color: COLORS.textPrimary, fontWeight: '700', fontSize: 13 },
+  finishTopButtonText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   exerciseTabs: { flexGrow: 0, marginBottom: 8 },
   exerciseTab: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 16,
     paddingVertical: 8,
     paddingHorizontal: 14,
     marginRight: 8,
     maxWidth: 160,
   },
-  exerciseTabActive: { backgroundColor: COLORS.accent },
-  exerciseTabText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700' },
-  exerciseTabTextActive: { color: '#0B1D3A' },
+  exerciseTabActive: { backgroundColor: colors.accent },
+  exerciseTabText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
+  exerciseTabTextActive: { color: colors.background },
   scrollContent: { padding: 20, paddingBottom: 20 },
-  exerciseTitle: { color: COLORS.textPrimary, fontSize: 22, fontWeight: '800' },
-  exerciseSubtitle: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600', marginTop: 4, marginBottom: 16 },
+  exerciseTitle: { color: colors.textPrimary, fontSize: 22, fontWeight: '800' },
+  exerciseSubtitle: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginTop: 4, marginBottom: 16 },
   restCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 18,
     alignItems: 'center',
@@ -450,28 +451,28 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 4,
   },
-  restLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
-  restClock: { color: COLORS.textPrimary, fontSize: 40, fontWeight: '800', marginVertical: 6 },
+  restLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
+  restClock: { color: colors.textPrimary, fontSize: 40, fontWeight: '800', marginVertical: 6 },
   restProgressTrack: {
     width: '100%',
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.cardAlt,
+    backgroundColor: colors.cardAlt,
     overflow: 'hidden',
     marginBottom: 14,
   },
-  restProgressFill: { height: '100%', backgroundColor: COLORS.accent, borderRadius: 3 },
+  restProgressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 3 },
   restControlsRow: { flexDirection: 'row', alignItems: 'center' },
   restControlButton: {
-    backgroundColor: COLORS.cardAlt,
+    backgroundColor: colors.cardAlt,
     borderRadius: 14,
     paddingVertical: 10,
     paddingHorizontal: 18,
     marginHorizontal: 8,
   },
-  restControlText: { color: COLORS.textPrimary, fontWeight: '700', fontSize: 13 },
+  restControlText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   restControlButtonPrimary: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -479,28 +480,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   setsTableHeader: { flexDirection: 'row', marginBottom: 8, paddingHorizontal: 4 },
-  setsHeaderCell: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  setsHeaderCell: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingVertical: 12,
     paddingHorizontal: 12,
     marginBottom: 8,
   },
-  setRowEditing: { borderWidth: 1.5, borderColor: COLORS.accent },
-  setIndexText: { color: COLORS.textSecondary, fontWeight: '700', fontSize: 13 },
-  setCellText: { color: COLORS.textPrimary, fontSize: 13 },
+  setRowEditing: { borderWidth: 1.5, borderColor: colors.accent },
+  setIndexText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
+  setCellText: { color: colors.textPrimary, fontSize: 13 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 8 },
   inputBox: { flex: 1, marginRight: 10 },
-  inputLabel: { color: COLORS.textSecondary, fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
+  inputLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
   input: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 13,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -508,7 +509,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 16,
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -518,16 +519,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 18,
     marginTop: 12,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(0,210,211,0.3)',
     borderStyle: 'dashed',
   },
-  addExerciseInlineText: { color: COLORS.accent, fontWeight: '700', fontSize: 14, marginLeft: 6 },
+  addExerciseInlineText: { color: colors.accent, fontWeight: '700', fontSize: 14, marginLeft: 6 },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
-  emptyStateText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 12 },
-  emptyStateSubtext: { color: COLORS.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' },
+  emptyStateText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 12 },
+  emptyStateSubtext: { color: colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' },
   footer: {
     flexDirection: 'row',
     padding: 16,
@@ -538,7 +539,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 16,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -546,11 +547,11 @@ const styles = StyleSheet.create({
   navButtonPrimary: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 15,
   },
-  navButtonPrimaryText: { color: '#0B1D3A', fontWeight: '800', fontSize: 15, marginRight: 6 },
+  navButtonPrimaryText: { color: colors.background, fontWeight: '800', fontSize: 15, marginRight: 6 },
 });

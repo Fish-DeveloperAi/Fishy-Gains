@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,18 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LineChart } from 'react-native-chart-kit';
 
 import { getWorkoutDetail } from '../database/db';
+import { useTheme } from '../theme/ThemeContext';
 
 const screenWidth = Dimensions.get('window').width;
-
-const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
 
 function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
@@ -33,6 +24,9 @@ function formatDate(dateString) {
 }
 
 export default function WorkoutSummaryScreen({ route, navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { workoutId } = route.params;
   const [workout, setWorkout] = useState(null);
 
@@ -69,22 +63,22 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statBox}>
-            <Ionicons name="time-outline" size={20} color={COLORS.accent} />
+            <Ionicons name="time-outline" size={20} color={colors.accent} />
             <Text style={styles.statValue}>{formatDuration(workout.duration_seconds)}</Text>
             <Text style={styles.statLabel}>Duration</Text>
           </View>
           <View style={styles.statBox}>
-            <Ionicons name="barbell-outline" size={20} color={COLORS.accent} />
+            <Ionicons name="barbell-outline" size={20} color={colors.accent} />
             <Text style={styles.statValue}>{Math.round(workout.totalVolume).toLocaleString()} kg</Text>
             <Text style={styles.statLabel}>Volume</Text>
           </View>
           <View style={styles.statBox}>
-            <Ionicons name="layers-outline" size={20} color={COLORS.accent} />
+            <Ionicons name="layers-outline" size={20} color={colors.accent} />
             <Text style={styles.statValue}>{workout.totalSets}</Text>
             <Text style={styles.statLabel}>Sets</Text>
           </View>
           <View style={styles.statBox}>
-            <Ionicons name="trophy-outline" size={20} color={COLORS.accent} />
+            <Ionicons name="trophy-outline" size={20} color={colors.accent} />
             <Text style={styles.statValue}>{workout.prCount}</Text>
             <Text style={styles.statLabel}>PRs</Text>
           </View>
@@ -114,7 +108,7 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
                   <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
                   <Text style={styles.exerciseMuscle}>{exercise.muscleGroup}</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
+                <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
 
               {/* Mini Line Chart */}
@@ -128,14 +122,14 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
                     width={screenWidth - 72} 
                     height={140}
                     chartConfig={{
-                      backgroundColor: COLORS.card,
-                      backgroundGradientFrom: COLORS.card,
-                      backgroundGradientTo: COLORS.card,
+                      backgroundColor: colors.card,
+                      backgroundGradientFrom: colors.card,
+                      backgroundGradientTo: colors.card,
                       decimalPlaces: 1,
-                      color: (opacity = 1) => `rgba(0, 210, 211, ${opacity})`,
-                      labelColor: (opacity = 1) => COLORS.textSecondary,
+                      color: () => colors.accent,
+                      labelColor: () => colors.textSecondary,
                       style: { borderRadius: 16 },
-                      propsForDots: { r: "4", strokeWidth: "2", stroke: COLORS.accent },
+                      propsForDots: { r: "4", strokeWidth: "2", stroke: colors.accent },
                       propsForBackgroundLines: { strokeDasharray: "4", stroke: "rgba(124, 141, 175, 0.2)" }
                     }}
                     bezier
@@ -156,7 +150,7 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
 
               {exercise.sets.map((set, setIdx) => (
                 <View key={set.id} style={styles.setRow}>
-                  <Text style={[styles.setCellText, { flex: 0.5, color: COLORS.textSecondary }]}>
+                  <Text style={[styles.setCellText, { flex: 0.5, color: colors.textSecondary }]}>
                     {setIdx + 1}
                   </Text>
                   <Text style={[styles.setCellText, { flex: 1, fontWeight: '700' }]}>
@@ -166,7 +160,7 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
                     {set.reps}
                   </Text>
                   <View style={{ width: 24, alignItems: 'center' }}>
-                    {set.is_pr === 1 && <Ionicons name="trophy" size={16} color={COLORS.accent} />}
+                    {set.is_pr === 1 && <Ionicons name="trophy" size={16} color={colors.accent} />}
                   </View>
                 </View>
               ))}
@@ -178,12 +172,12 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: 20, paddingBottom: 40 },
   header: { marginBottom: 24 },
-  workoutName: { color: COLORS.textPrimary, fontSize: 26, fontWeight: '800', marginBottom: 6 },
-  workoutDate: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
+  workoutName: { color: colors.textPrimary, fontSize: 26, fontWeight: '800', marginBottom: 6 },
+  workoutDate: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -192,17 +186,17 @@ const styles = StyleSheet.create({
   },
   statBox: {
     width: '48%',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     alignItems: 'center',
   },
-  statValue: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '800', marginTop: 8 },
-  statLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600', marginTop: 2 },
-  sectionLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
+  statValue: { color: colors.textPrimary, fontSize: 18, fontWeight: '800', marginTop: 8 },
+  statLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  sectionLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
   exerciseCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 16,
     marginBottom: 16,
@@ -216,14 +210,14 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: 'rgba(0, 210, 211, 0.15)',
+    backgroundColor: colors.cardAlt,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
-  indexText: { color: COLORS.accent, fontWeight: '800', fontSize: 14 },
-  exerciseName: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700' },
-  exerciseMuscle: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
+  indexText: { color: colors.accent, fontWeight: '800', fontSize: 14 },
+  exerciseName: { color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+  exerciseMuscle: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
   chartContainer: {
     alignItems: 'center',
     marginTop: 4,
@@ -233,17 +227,17 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   setsTableHeader: { flexDirection: 'row', marginBottom: 8, paddingHorizontal: 4 },
-  setsHeaderCell: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  setsHeaderCell: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   setRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.cardAlt,
+    backgroundColor: colors.cardAlt,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 12,
     marginBottom: 6,
   },
-  setCellText: { color: COLORS.textPrimary, fontSize: 14 },
+  setCellText: { color: colors.textPrimary, fontSize: 14 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyStateText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
+  emptyStateText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
 });

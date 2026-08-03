@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,16 +20,7 @@ import { LineChart } from 'react-native-chart-kit';
 const screenWidth = Dimensions.get('window').width;
 
 import { getBodyLogs, addBodyLog, deleteBodyLog } from '../database/db';
-
-const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
+import { useTheme } from '../theme/ThemeContext';
 
 function formatDate(dateString) {
   const d = new Date(dateString.replace(' ', 'T'));
@@ -37,6 +28,9 @@ function formatDate(dateString) {
 }
 
 export default function BodyLogScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [logs, setLogs] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [weightInput, setWeightInput] = useState('');
@@ -82,7 +76,6 @@ export default function BodyLogScreen() {
       return;
     }
     
-    // Updated to include the new measurements
     addBodyLog(weight, bodyFat, chest, waist, arms);
     
     setWeightInput('');
@@ -118,7 +111,7 @@ export default function BodyLogScreen() {
                     <Ionicons
                       name={weightDelta > 0 ? 'arrow-up' : weightDelta < 0 ? 'arrow-down' : 'remove'}
                       size={12}
-                      color={COLORS.textSecondary}
+                      color={colors.textSecondary}
                     />
                     <Text style={styles.deltaText}>{Math.abs(weightDelta).toFixed(1)} kg</Text>
                   </View>
@@ -152,16 +145,16 @@ export default function BodyLogScreen() {
                   withVerticalLines={false}
                   withOuterLines={false}
                   chartConfig={{
-                    backgroundColor: COLORS.card,
-                    backgroundGradientFrom: COLORS.card,
-                    backgroundGradientTo: COLORS.card,
+                    backgroundColor: colors.card,
+                    backgroundGradientFrom: colors.card,
+                    backgroundGradientTo: colors.card,
                     decimalPlaces: 1,
-                    color: (opacity = 1) => `rgba(0, 210, 211, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(124, 141, 175, ${opacity})`,
+                    color: () => colors.accent,
+                    labelColor: () => colors.textSecondary,
                     propsForDots: {
                       r: '5',
                       strokeWidth: '2',
-                      stroke: COLORS.accent,
+                      stroke: colors.accent,
                     },
                     propsForBackgroundLines: {
                       strokeDasharray: '4 4',
@@ -178,7 +171,7 @@ export default function BodyLogScreen() {
             )}
 
             <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
-              <Ionicons name="add-circle" size={20} color={COLORS.accent} />
+              <Ionicons name="add-circle" size={20} color={colors.accent} />
               <Text style={styles.addButtonText}>Log Entry</Text>
             </TouchableOpacity>
 
@@ -187,7 +180,7 @@ export default function BodyLogScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons name="body-outline" size={36} color={COLORS.textSecondary} />
+            <Ionicons name="body-outline" size={36} color={colors.textSecondary} />
             <Text style={styles.emptyStateText}>No entries yet</Text>
           </View>
         }
@@ -246,7 +239,7 @@ export default function BodyLogScreen() {
               style={styles.modalInput}
               keyboardType="decimal-pad"
               placeholder="e.g. 75"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={weightInput}
               onChangeText={setWeightInput}
             />
@@ -256,7 +249,7 @@ export default function BodyLogScreen() {
               style={styles.modalInput}
               keyboardType="decimal-pad"
               placeholder="Optional"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={chestInput}
               onChangeText={setChestInput}
             />
@@ -266,7 +259,7 @@ export default function BodyLogScreen() {
               style={styles.modalInput}
               keyboardType="decimal-pad"
               placeholder="Optional"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={waistInput}
               onChangeText={setWaistInput}
             />
@@ -276,7 +269,7 @@ export default function BodyLogScreen() {
               style={styles.modalInput}
               keyboardType="decimal-pad"
               placeholder="Optional"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={armsInput}
               onChangeText={setArmsInput}
             />
@@ -286,7 +279,7 @@ export default function BodyLogScreen() {
               style={styles.modalInput}
               keyboardType="decimal-pad"
               placeholder="Optional"
-              placeholderTextColor={COLORS.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               value={bodyFatInput}
               onChangeText={setBodyFatInput}
             />
@@ -316,23 +309,23 @@ export default function BodyLogScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   listContent: { padding: 20, paddingBottom: 40 },
   summaryRow: { flexDirection: 'row', marginBottom: 16 },
   summaryCard: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 16,
     marginRight: 10,
   },
-  summaryLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
-  summaryValue: { color: COLORS.textPrimary, fontSize: 24, fontWeight: '800', marginTop: 6 },
+  summaryLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
+  summaryValue: { color: colors.textPrimary, fontSize: 24, fontWeight: '800', marginTop: 6 },
   deltaRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-  deltaText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 4 },
+  deltaText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 4 },
   lineChartCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     paddingVertical: 16,
     marginBottom: 16,
@@ -342,7 +335,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 16,
     paddingVertical: 16,
     marginBottom: 20,
@@ -350,10 +343,10 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,210,211,0.3)',
     borderStyle: 'dashed',
   },
-  addButtonText: { color: COLORS.accent, fontWeight: '700', fontSize: 14, marginLeft: 8 },
-  sectionLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
+  addButtonText: { color: colors.accent, fontWeight: '700', fontSize: 14, marginLeft: 8 },
+  sectionLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
   emptyState: { alignItems: 'center', paddingVertical: 32 },
-  emptyStateText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600', marginTop: 10 },
+  emptyStateText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600', marginTop: 10 },
   minimalRowContainer: {
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(124, 141, 175, 0.2)', 
@@ -371,7 +364,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   minimalRowWeight: {
-    color: '#ffffff',
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '700',
   },
@@ -395,7 +388,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   measurementValue: {
-    color: '#00d2d3', 
+    color: colors.accent, 
     fontSize: 14,
     fontWeight: 'bold',
   },
@@ -406,20 +399,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 30,
   },
-  modalCard: { width: '100%', backgroundColor: COLORS.cardAlt, borderRadius: 22, padding: 22 },
-  modalTitle: { color: COLORS.textPrimary, fontSize: 17, fontWeight: '800', marginBottom: 16 },
-  modalInputLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6, marginTop: 10 },
+  modalCard: { width: '100%', backgroundColor: colors.cardAlt, borderRadius: 22, padding: 22 },
+  modalTitle: { color: colors.textPrimary, fontSize: 17, fontWeight: '800', marginBottom: 16 },
+  modalInputLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6, marginTop: 10 },
   modalInput: {
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 15,
   },
   modalButtonRow: { flexDirection: 'row', marginTop: 20 },
   modalCancelButton: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 14, marginRight: 8 },
-  modalCancelText: { color: COLORS.textSecondary, fontWeight: '700', fontSize: 15 },
-  modalSaveButton: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 14, backgroundColor: COLORS.accent, marginLeft: 8 },
-  modalSaveText: { color: '#0B1D3A', fontWeight: '800', fontSize: 15 },
+  modalCancelText: { color: colors.textSecondary, fontWeight: '700', fontSize: 15 },
+  modalSaveButton: { flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 14, backgroundColor: colors.accent, marginLeft: 8 },
+  modalSaveText: { color: colors.background, fontWeight: '800', fontSize: 15 },
 });

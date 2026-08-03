@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,21 +14,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { addCustomExercise } from '../database/db';
-
-const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
+import { useTheme } from '../theme/ThemeContext';
 
 const MUSCLE_GROUPS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Cardio', 'Full Body'];
 const CATEGORIES = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Other'];
 
 export default function AddExerciseScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [name, setName] = useState('');
   const [muscleGroup, setMuscleGroup] = useState('Chest');
   const [category, setCategory] = useState('Barbell');
@@ -51,7 +45,7 @@ export default function AddExerciseScreen({ navigation }) {
           <TextInput
             style={styles.input}
             placeholder="e.g. Cable Lateral Raise"
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={name}
             onChangeText={setName}
             autoFocus
@@ -84,7 +78,7 @@ export default function AddExerciseScreen({ navigation }) {
           </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Ionicons name="checkmark-circle" size={20} color="#0B1D3A" />
+            <Ionicons name="checkmark-circle" size={20} color={colors.background} />
             <Text style={styles.saveButtonText}>Save Exercise</Text>
           </TouchableOpacity>
         </ScrollView>
@@ -93,11 +87,11 @@ export default function AddExerciseScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: 20, paddingBottom: 40 },
   label: {
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '700',
     letterSpacing: 1,
@@ -105,16 +99,16 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   input: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 15,
   },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap' },
   chip: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 20,
     paddingVertical: 9,
     paddingHorizontal: 15,
@@ -123,17 +117,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  chipActive: { backgroundColor: COLORS.accent },
-  chipText: { color: COLORS.textSecondary, fontSize: 13, fontWeight: '600' ,includeFontPadding: false ,textAlignVertical: 'center'},
-  chipTextActive: { color: '#0B1D3A', fontWeight: '800' },
+  chipActive: { backgroundColor: colors.accent },
+  chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' ,includeFontPadding: false ,textAlignVertical: 'center'},
+  chipTextActive: { color: colors.background, fontWeight: '800' },
   saveButton: {
     flexDirection: 'row',
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 32,
   },
-  saveButtonText: { color: '#0B1D3A', fontWeight: '800', fontSize: 15, marginLeft: 8 },
+  saveButtonText: { color: colors.background, fontWeight: '800', fontSize: 15, marginLeft: 8 },
 });
