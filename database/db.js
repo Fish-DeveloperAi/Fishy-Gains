@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import exercisesData from '../assets/exercises.json';
 
 let db = null;
 
@@ -9,67 +10,8 @@ export function getDb() {
   return db;
 }
 
-// Added the exact image folder names as a 4th parameter
-const DEFAULT_EXERCISES = [
-  ['Barbell Bench Press', 'Chest', 'Barbell', 'Barbell_Bench_Press_-_Medium_Grip'],
-  ['Incline Barbell Bench Press', 'Chest', 'Barbell', 'Barbell_Incline_Bench_Press_-_Medium_Grip'],
-  ['Dumbbell Bench Press', 'Chest', 'Dumbbell', 'Dumbbell_Bench_Press'],
-  ['Incline Dumbbell Press', 'Chest', 'Dumbbell', 'Incline_Dumbbell_Press'],
-  ['Dumbbell Fly', 'Chest', 'Dumbbell', 'Dumbbell_Flyes'],
-  ['Cable Crossover', 'Chest', 'Cable', 'Cable_Crossover'],
-  ['Push Up', 'Chest', 'Bodyweight', 'Pushups'],
-  ['Dips', 'Chest', 'Bodyweight', 'Dips_-_Chest_Version'],
-  ['Barbell Squat', 'Legs', 'Barbell', 'Barbell_Squat'],
-  ['Front Squat', 'Legs', 'Barbell', 'Front_Barbell_Squat'],
-  ['Leg Press', 'Legs', 'Machine', 'Leg_Press'],
-  ['Romanian Deadlift', 'Legs', 'Barbell', 'Romanian_Deadlift'],
-  ['Leg Curl', 'Legs', 'Machine', 'Seated_Leg_Curl'],
-  ['Leg Extension', 'Legs', 'Machine', 'Leg_Extensions'],
-  ['Walking Lunge', 'Legs', 'Dumbbell', 'Barbell_Walking_Lunge'],
-  ['Bulgarian Split Squat', 'Legs', 'Dumbbell', 'Barbell_Side_Split_Squat'],
-  ['Standing Calf Raise', 'Legs', 'Machine', 'Standing_Calf_Raises'],
-  ['Hip Thrust', 'Legs', 'Barbell', 'Barbell_Hip_Thrust'],
-  ['Deadlift', 'Back', 'Barbell', 'Barbell_Deadlift'],
-  ['Sumo Deadlift', 'Back', 'Barbell', 'Sumo_Deadlift'],
-  ['Pull Up', 'Back', 'Bodyweight', 'Pullups'],
-  ['Chin Up', 'Back', 'Bodyweight', 'Chin-Up'],
-  ['Lat Pulldown', 'Back', 'Cable', 'Wide-Grip_Lat_Pulldown'],
-  ['Barbell Row', 'Back', 'Barbell', 'Bent_Over_Barbell_Row'],
-  ['Dumbbell Row', 'Back', 'Dumbbell', 'Bent_Over_Two-Dumbbell_Row'],
-  ['Seated Cable Row', 'Back', 'Cable', 'Seated_Cable_Rows'],
-  ['T-Bar Row', 'Back', 'Barbell', 'T-Bar_Row_with_Handle'],
-  ['Face Pull', 'Back', 'Cable', 'Face_Pull'],
-  ['Overhead Press', 'Shoulders', 'Barbell', 'Barbell_Shoulder_Press'],
-  ['Seated Dumbbell Press', 'Shoulders', 'Dumbbell', 'Seated_Dumbbell_Press'],
-  ['Arnold Press', 'Shoulders', 'Dumbbell', 'Arnold_Dumbbell_Press'],
-  ['Lateral Raise', 'Shoulders', 'Dumbbell', 'Side_Lateral_Raise'],
-  ['Front Raise', 'Shoulders', 'Dumbbell', 'Front_Dumbbell_Raise'],
-  ['Rear Delt Fly', 'Shoulders', 'Dumbbell', 'Reverse_Flyes'],
-  ['Shrug', 'Shoulders', 'Barbell', 'Barbell_Shrug'],
-  ['Barbell Curl', 'Arms', 'Barbell', 'Barbell_Curl'],
-  ['Dumbbell Curl', 'Arms', 'Dumbbell', 'Dumbbell_Bicep_Curl'],
-  ['Hammer Curl', 'Arms', 'Dumbbell', 'Hammer_Curls'],
-  ['Preacher Curl', 'Arms', 'Barbell', 'Preacher_Curl'],
-  ['Cable Curl', 'Arms', 'Cable', 'Cable_Curls'],
-  ['Close Grip Bench Press', 'Arms', 'Barbell', 'Close-Grip_Barbell_Bench_Press'],
-  ['Tricep Pushdown', 'Arms', 'Cable', 'Triceps_Pushdown'],
-  ['Overhead Tricep Extension', 'Arms', 'Dumbbell', 'Dumbbell_One-Arm_Triceps_Extension'],
-  ['Skull Crusher', 'Arms', 'Barbell', 'EZ-Bar_Skullcrusher'],
-  ['Plank', 'Core', 'Bodyweight', 'Plank'],
-  ['Hanging Leg Raise', 'Core', 'Bodyweight', 'Hanging_Leg_Raise'],
-  ['Cable Crunch', 'Core', 'Cable', 'Cable_Crunch'],
-  ['Russian Twist', 'Core', 'Bodyweight', 'Russian_Twist'],
-  ['Ab Wheel Rollout', 'Core', 'Bodyweight', 'Ab_Roller'],
-  ['Sit Up', 'Core', 'Bodyweight', 'Sit-Up'],
-  ['Treadmill Run', 'Cardio', 'Machine', 'Running_Treadmill'],
-  ['Stationary Bike', 'Cardio', 'Machine', 'Bicycling_Stationary'],
-  ['Rowing Machine', 'Cardio', 'Machine', 'Rowing_Stationary'],
-  ['Jump Rope', 'Cardio', 'Bodyweight', 'Rope_Jumping'],
-];
-
 const LBS_TO_KG = 0.453592;
 const METRIC_MIGRATION_NAME = 'lbs_to_kg_v1';
-const IMAGE_MIGRATION_NAME = 'add_exercise_images_v1';
 
 export function initDatabase() {
   const database = getDb();
@@ -89,11 +31,11 @@ export function initDatabase() {
       name TEXT NOT NULL,
       muscle_group TEXT NOT NULL,
       category TEXT NOT NULL,
-      is_custom INTEGER NOT NULL DEFAULT 0
+      is_custom INTEGER NOT NULL DEFAULT 0,
+      image TEXT
     );
   `);
 
-  // Dynamically add the image column if it doesn't exist
   const exerciseCols = database.getAllSync("PRAGMA table_info(exercises);");
   const hasImageCol = exerciseCols.some(col => col.name === 'image');
   if (!hasImageCol) {
@@ -108,15 +50,15 @@ export function initDatabase() {
     );
   `);
 
+  // Foreign key for exercise_id removed to support JSON string IDs
   database.execSync(`
     CREATE TABLE IF NOT EXISTS routine_exercises (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       routine_id INTEGER NOT NULL,
-      exercise_id INTEGER NOT NULL,
+      exercise_id TEXT NOT NULL,
       order_index INTEGER NOT NULL DEFAULT 0,
       target_sets INTEGER NOT NULL DEFAULT 3,
-      FOREIGN KEY (routine_id) REFERENCES routines(id) ON DELETE CASCADE,
-      FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
+      FOREIGN KEY (routine_id) REFERENCES routines(id) ON DELETE CASCADE
     );
   `);
 
@@ -133,18 +75,18 @@ export function initDatabase() {
     );
   `);
 
+  // Foreign key for exercise_id removed to support JSON string IDs
   database.execSync(`
     CREATE TABLE IF NOT EXISTS sets (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       workout_id INTEGER NOT NULL,
-      exercise_id INTEGER NOT NULL,
+      exercise_id TEXT NOT NULL,
       set_index INTEGER NOT NULL DEFAULT 0,
       weight REAL NOT NULL DEFAULT 0,
       reps INTEGER NOT NULL DEFAULT 0,
       is_pr INTEGER NOT NULL DEFAULT 0,
       completed INTEGER NOT NULL DEFAULT 0,
-      FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE,
-      FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE
+      FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE
     );
   `);
 
@@ -175,20 +117,7 @@ export function initDatabase() {
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_workouts_date ON workouts(date);`);
   database.execSync(`CREATE INDEX IF NOT EXISTS idx_exercises_muscle ON exercises(muscle_group);`);
 
-  // Handle fresh installs
-  const countRow = database.getFirstSync('SELECT COUNT(*) as count FROM exercises;');
-  if (countRow.count === 0) {
-    DEFAULT_EXERCISES.forEach(([name, muscleGroup, category, imageId]) => {
-      database.runSync(
-        'INSERT INTO exercises (name, muscle_group, category, is_custom, image) VALUES (?, ?, ?, 0, ?);',
-        [name, muscleGroup, category, imageId || null]
-      );
-    });
-  }
-
-  // Handle updates for existing users
   runMetricMigration(database);
-  runImageMigration(database);
 }
 
 function runMetricMigration(database) {
@@ -205,51 +134,99 @@ function runMetricMigration(database) {
   });
 }
 
-// Maps existing database rows to their exact image folder identifiers safely
-function runImageMigration(database) {
-  const alreadyApplied = database.getFirstSync(
-    'SELECT id FROM migrations WHERE name = ?;',
-    [IMAGE_MIGRATION_NAME]
-  );
-  if (alreadyApplied) return;
+// Map specific anatomical JSON muscles to your classic broad categories
+const MUSCLE_MAP = {
+  'abdominals': 'Core',
+  'lower back': 'Core',
+  'biceps': 'Arms',
+  'triceps': 'Arms',
+  'forearms': 'Arms',
+  'chest': 'Chest',
+  'lats': 'Back',
+  'middle back': 'Back',
+  'traps': 'Back',
+  'shoulders': 'Shoulders',
+  'neck': 'Shoulders',
+  'quadriceps': 'Legs',
+  'hamstrings': 'Legs',
+  'calves': 'Legs',
+  'glutes': 'Legs',
+  'adductors': 'Legs',
+  'abductors': 'Legs'
+};
 
-  database.withTransactionSync(() => {
-    DEFAULT_EXERCISES.forEach(([name, muscleGroup, category, imageId]) => {
-      if (imageId) {
-        database.runSync('UPDATE exercises SET image = ? WHERE name = ? AND is_custom = 0;', [imageId, name]);
-      }
-    });
-    database.runSync('INSERT INTO migrations (name) VALUES (?);', [IMAGE_MIGRATION_NAME]);
-  });
+// Helper function to safely apply the map
+function getBroadCategory(primaryMuscles) {
+  if (!primaryMuscles || primaryMuscles.length === 0) return 'Other';
+  const anatomicalName = primaryMuscles[0].toLowerCase();
+  // Return the mapped category, or capitalize the original if not found in map
+  return MUSCLE_MAP[anatomicalName] || (anatomicalName.charAt(0).toUpperCase() + anatomicalName.slice(1));
 }
 
 // ---------- EXERCISES ----------
 
 export function getExercises(searchTerm = '', muscleGroup = 'All') {
   const database = getDb();
-  let query = 'SELECT * FROM exercises WHERE 1=1';
-  const params = [];
+  
+  // 1. Load and format JSON exercises with the broad category mapper
+  let jsonList = exercisesData.map(e => ({
+    id: e.id,
+    name: e.name,
+    muscle_group: getBroadCategory(e.primaryMuscles),
+    category: e.category || 'strength',
+    is_custom: 0,
+    image: e.images && e.images.length > 0 ? e.images[0] : null
+  }));
+
+  // 2. Load custom exercises from SQLite
+  let dbList = database.getAllSync('SELECT * FROM exercises WHERE is_custom = 1;');
+  
+  // 3. Merge them
+  let combined = [...jsonList, ...dbList];
+
+  // 4. Apply filters
   if (searchTerm && searchTerm.trim().length > 0) {
-    query += ' AND name LIKE ?';
-    params.push(`%${searchTerm.trim()}%`);
+    const term = searchTerm.toLowerCase().trim();
+    combined = combined.filter(ex => ex.name.toLowerCase().includes(term));
   }
   if (muscleGroup && muscleGroup !== 'All') {
-    query += ' AND muscle_group = ?';
-    params.push(muscleGroup);
+    combined = combined.filter(ex => ex.muscle_group.toLowerCase() === muscleGroup.toLowerCase());
   }
-  query += ' ORDER BY name ASC';
-  return database.getAllSync(query, params);
+
+  combined.sort((a, b) => a.name.localeCompare(b.name));
+  return combined;
 }
 
 export function getExerciseById(id) {
+  // Check JSON first
+  const jsonEx = exercisesData.find(e => e.id === id);
+  if (jsonEx) {
+    return {
+      id: jsonEx.id,
+      name: jsonEx.name,
+      muscle_group: getBroadCategory(jsonEx.primaryMuscles),
+      category: jsonEx.category || 'strength',
+      is_custom: 0,
+      image: jsonEx.images && jsonEx.images.length > 0 ? jsonEx.images[0] : null
+    };
+  }
+  // Fallback to custom database exercises
   const database = getDb();
-  return database.getFirstSync('SELECT * FROM exercises WHERE id = ?;', [id]);
+  return database.getFirstSync('SELECT * FROM exercises WHERE id = ? AND is_custom = 1;', [id]);
 }
 
 export function getMuscleGroups() {
+  const groups = new Set();
+  
+  exercisesData.forEach(e => {
+    groups.add(getBroadCategory(e.primaryMuscles));
+  });
+  
   const database = getDb();
-  const rows = database.getAllSync('SELECT DISTINCT muscle_group FROM exercises ORDER BY muscle_group ASC;');
-  return rows.map((r) => r.muscle_group);
+  const custom = database.getAllSync('SELECT DISTINCT muscle_group FROM exercises WHERE is_custom = 1;');
+  custom.forEach(r => groups.add(r.muscle_group));
+
+  return Array.from(groups).sort();
 }
 
 export function addCustomExercise(name, muscleGroup, category) {
@@ -272,18 +249,15 @@ export function getRoutines() {
   const database = getDb();
   const routines = database.getAllSync('SELECT * FROM routines ORDER BY created_at DESC;');
   return routines.map((r) => {
-    const exerciseCount = database.getFirstSync(
-      'SELECT COUNT(*) as count FROM routine_exercises WHERE routine_id = ?;',
+    const routineExercises = database.getAllSync(
+      'SELECT exercise_id FROM routine_exercises WHERE routine_id = ? ORDER BY order_index ASC;',
       [r.id]
     );
-    const exercises = database.getAllSync(
-      `SELECT e.muscle_group FROM routine_exercises re
-       JOIN exercises e ON e.id = re.exercise_id
-       WHERE re.routine_id = ? ORDER BY re.order_index ASC;`,
-      [r.id]
-    );
-    const muscleGroups = [...new Set(exercises.map((e) => e.muscle_group))];
-    return { ...r, exerciseCount: exerciseCount.count, muscleGroups };
+    const muscleGroups = [...new Set(routineExercises.map((re) => {
+      const ex = getExerciseById(re.exercise_id);
+      return ex ? ex.muscle_group : 'Other';
+    }))];
+    return { ...r, exerciseCount: routineExercises.length, muscleGroups };
   });
 }
 
@@ -328,14 +302,24 @@ export function duplicateRoutine(id) {
 
 export function getRoutineExercises(routineId) {
   const database = getDb();
-  return database.getAllSync(
-    `SELECT re.id as routine_exercise_id, re.order_index, re.target_sets, e.*
-     FROM routine_exercises re
-     JOIN exercises e ON e.id = re.exercise_id
-     WHERE re.routine_id = ?
-     ORDER BY re.order_index ASC;`,
+  const rows = database.getAllSync(
+    'SELECT * FROM routine_exercises WHERE routine_id = ? ORDER BY order_index ASC;',
     [routineId]
   );
+  return rows.map(re => {
+    const ex = getExerciseById(re.exercise_id);
+    return {
+      routine_exercise_id: re.id,
+      order_index: re.order_index,
+      target_sets: re.target_sets,
+      id: ex?.id || re.exercise_id,
+      name: ex?.name || 'Unknown Exercise',
+      muscle_group: ex?.muscle_group || 'Other',
+      category: ex?.category || 'strength',
+      is_custom: ex?.is_custom || 0,
+      image: ex?.image || null
+    };
+  });
 }
 
 export function addExerciseToRoutine(routineId, exerciseId) {
@@ -347,7 +331,7 @@ export function addExerciseToRoutine(routineId, exerciseId) {
   const nextIndex = (maxRow.maxIndex === null ? -1 : maxRow.maxIndex) + 1;
   database.runSync(
     'INSERT INTO routine_exercises (routine_id, exercise_id, order_index, target_sets) VALUES (?, ?, ?, 3);',
-    [routineId, exerciseId, nextIndex]
+    [routineId, String(exerciseId), nextIndex]
   );
 }
 
@@ -413,7 +397,7 @@ function enrichWorkout(workout) {
   const exerciseIds = [...new Set(sets.map((s) => s.exercise_id))];
   const muscleGroups = [];
   exerciseIds.forEach((id) => {
-    const ex = database.getFirstSync('SELECT muscle_group FROM exercises WHERE id = ?;', [id]);
+    const ex = getExerciseById(id);
     if (ex && !muscleGroups.includes(ex.muscle_group)) muscleGroups.push(ex.muscle_group);
   });
   return {
@@ -430,19 +414,26 @@ export function getWorkoutDetail(workoutId) {
   const database = getDb();
   const workout = getWorkoutById(workoutId);
   if (!workout) return null;
+  
   const setRows = database.getAllSync(
-    `SELECT s.*, e.name as exercise_name, e.muscle_group
-     FROM sets s JOIN exercises e ON e.id = s.exercise_id
-     WHERE s.workout_id = ? ORDER BY s.exercise_id ASC, s.set_index ASC;`,
+    'SELECT * FROM sets WHERE workout_id = ? ORDER BY exercise_id ASC, set_index ASC;',
     [workoutId]
   );
+  
   const grouped = {};
   setRows.forEach((row) => {
     if (!grouped[row.exercise_id]) {
-      grouped[row.exercise_id] = { exerciseId: row.exercise_id, exerciseName: row.exercise_name, muscleGroup: row.muscle_group, sets: [] };
+      const ex = getExerciseById(row.exercise_id);
+      grouped[row.exercise_id] = { 
+        exerciseId: row.exercise_id, 
+        exerciseName: ex?.name || 'Unknown', 
+        muscleGroup: ex?.muscle_group || 'Other', 
+        sets: [] 
+      };
     }
     grouped[row.exercise_id].sets.push(row);
   });
+  
   const enriched = enrichWorkout(workout);
   return { ...enriched, exercises: Object.values(grouped) };
 }
@@ -530,7 +521,7 @@ export function getSetsForWorkoutExercise(workoutId, exerciseId) {
   const database = getDb();
   return database.getAllSync(
     'SELECT * FROM sets WHERE workout_id = ? AND exercise_id = ? ORDER BY set_index ASC;',
-    [workoutId, exerciseId]
+    [workoutId, String(exerciseId)]
   );
 }
 
@@ -539,7 +530,7 @@ export function addSet(workoutId, exerciseId, setIndex, weight, reps) {
   const isPr = checkIsPr(exerciseId, weight, reps, workoutId) ? 1 : 0;
   const result = database.runSync(
     'INSERT INTO sets (workout_id, exercise_id, set_index, weight, reps, is_pr, completed) VALUES (?, ?, ?, ?, ?, ?, 1);',
-    [workoutId, exerciseId, setIndex, weight, reps, isPr]
+    [workoutId, String(exerciseId), setIndex, weight, reps, isPr]
   );
   return result.lastInsertRowId;
 }
@@ -559,9 +550,8 @@ export function deleteSet(setId) {
 
 function checkIsPr(exerciseId, weight, reps, currentWorkoutId, excludeSetId = null) {
   const database = getDb();
-  let query = `SELECT MAX(weight) as maxWeight FROM sets
-    WHERE exercise_id = ? AND workout_id != ?`;
-  const params = [exerciseId, currentWorkoutId];
+  let query = `SELECT MAX(weight) as maxWeight FROM sets WHERE exercise_id = ? AND workout_id != ?`;
+  const params = [String(exerciseId), currentWorkoutId];
   if (excludeSetId) {
     query += ' AND id != ?';
     params.push(excludeSetId);
@@ -578,12 +568,12 @@ export function getPreviousPerformance(exerciseId, currentWorkoutId) {
      JOIN workouts w ON w.id = s.workout_id
      WHERE s.exercise_id = ? AND w.id != ? AND w.finished = 1
      ORDER BY w.date DESC LIMIT 1;`,
-    [exerciseId, currentWorkoutId]
+    [String(exerciseId), currentWorkoutId]
   );
   if (!lastWorkout) return [];
   return database.getAllSync(
     'SELECT * FROM sets WHERE workout_id = ? AND exercise_id = ? ORDER BY set_index ASC;',
-    [lastWorkout.id, exerciseId]
+    [lastWorkout.id, String(exerciseId)]
   );
 }
 
@@ -594,7 +584,7 @@ export function getExerciseHistory(exerciseId) {
      JOIN workouts w ON w.id = s.workout_id
      WHERE s.exercise_id = ? AND w.finished = 1
      ORDER BY w.date DESC;`,
-    [exerciseId]
+    [String(exerciseId)]
   );
   const grouped = {};
   sets.forEach((s) => {
@@ -614,19 +604,19 @@ export function getExercisePRs(exerciseId) {
      JOIN workouts w ON w.id = s.workout_id
      WHERE s.exercise_id = ? AND w.finished = 1
      ORDER BY s.weight DESC, w.date DESC LIMIT 1;`,
-    [exerciseId]
+    [String(exerciseId)]
   );
   const maxVolumeRow = database.getFirstSync(
     `SELECT MAX(s.weight * s.reps) as maxVolume FROM sets s
      JOIN workouts w ON w.id = s.workout_id
      WHERE s.exercise_id = ? AND w.finished = 1;`,
-    [exerciseId]
+    [String(exerciseId)]
   );
   const estimated1RMRow = database.getAllSync(
     `SELECT s.weight, s.reps FROM sets s
      JOIN workouts w ON w.id = s.workout_id
      WHERE s.exercise_id = ? AND w.finished = 1 AND s.reps > 0;`,
-    [exerciseId]
+    [String(exerciseId)]
   );
   let best1RM = 0;
   estimated1RMRow.forEach((s) => {
@@ -644,14 +634,16 @@ export function getExercisePRs(exerciseId) {
 export function getRecentPRs(limit = 5) {
   const database = getDb();
   const rows = database.getAllSync(
-    `SELECT s.*, e.name as exercise_name, w.date as workout_date FROM sets s
-     JOIN exercises e ON e.id = s.exercise_id
+    `SELECT s.*, w.date as workout_date FROM sets s
      JOIN workouts w ON w.id = s.workout_id
      WHERE s.is_pr = 1 AND w.finished = 1
      ORDER BY w.date DESC LIMIT ?;`,
     [limit]
   );
-  return rows;
+  return rows.map(r => {
+    const ex = getExerciseById(r.exercise_id);
+    return { ...r, exercise_name: ex?.name || 'Unknown' };
+  });
 }
 
 // ---------- BODY LOGS ----------

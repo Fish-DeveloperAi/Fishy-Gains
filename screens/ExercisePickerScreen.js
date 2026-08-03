@@ -42,7 +42,8 @@ const ExerciseImage = ({ item }) => {
 
   let imageUrl = null;
   if (item.image) {
-    imageUrl = `${IMAGE_BASE_URL}${item.image}/0.jpg`;
+    // FIX: Removed the extra '/0.jpg' because item.image already contains it
+    imageUrl = `${IMAGE_BASE_URL}${item.image}`;
   }
 
   if (!imageUrl || hasError) {
