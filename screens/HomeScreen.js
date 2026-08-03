@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,16 +19,8 @@ import {
   getRecentPRs,
   deleteWorkout,
 } from '../database/db';
-
-const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
+import OceanRankCard from '../components/OceanRankCard';
+import { useTheme } from '../theme/ThemeContext';
 
 function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
@@ -50,6 +42,9 @@ function formatRelativeDate(dateString) {
 }
 
 export default function HomeScreen({ navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [stats, setStats] = useState({ totalWorkouts: 0, totalVolume: 0, workoutsThisWeek: 0 });
   const [weeklyActivity, setWeeklyActivity] = useState([]);
   const [recentWorkouts, setRecentWorkouts] = useState([]);
@@ -88,7 +83,7 @@ export default function HomeScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl tintColor={COLORS.accent} refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl tintColor={colors.accent} refreshing={refreshing} onRefresh={onRefresh} />}
       >
         <View style={styles.topRow}>
           <View>
@@ -96,16 +91,18 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.appName}>Fishy Gains 🐟</Text>
           </View>
           <TouchableOpacity style={styles.bodyLogButton} onPress={() => navigation.navigate('BodyLog')}>
-            <Ionicons name="body-outline" size={22} color={COLORS.accent} />
+            <Ionicons name="body-outline" size={22} color={colors.accent} />
           </TouchableOpacity>
         </View>
 
         {streak > 0 && (
           <View style={styles.streakBanner}>
-            <Ionicons name="flame" size={20} color={COLORS.accent} />
+            <Ionicons name="flame" size={20} color={colors.accent} />
             <Text style={styles.streakText}>{streak} day streak — keep it going!</Text>
           </View>
         )}
+
+        <OceanRankCard />
 
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
@@ -136,7 +133,7 @@ export default function HomeScreen({ navigation }) {
                         styles.activityBar,
                         {
                           height: barHeight,
-                          backgroundColor: day.count > 0 ? COLORS.accent : 'rgba(124,141,175,0.25)',
+                          backgroundColor: day.count > 0 ? colors.accent : 'rgba(124,141,175,0.25)',
                         },
                       ]}
                     />
@@ -152,7 +149,7 @@ export default function HomeScreen({ navigation }) {
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>Recent PRs</Text>
-              <Ionicons name="trophy" size={16} color={COLORS.accent} />
+              <Ionicons name="trophy" size={16} color={colors.accent} />
             </View>
             {recentPRs.map((pr) => (
               <TouchableOpacity 
@@ -162,7 +159,7 @@ export default function HomeScreen({ navigation }) {
                 onPress={() => navigation.navigate('ExerciseHistory', { exerciseId: pr.exercise_id })}
               >
                 <View style={styles.prIconWrap}>
-                  <Ionicons name="trending-up" size={16} color={COLORS.accent} />
+                  <Ionicons name="trending-up" size={16} color={colors.accent} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.prExerciseName}>{pr.exercise_name}</Text>
@@ -176,7 +173,7 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.quickActionsRow}>
           <TouchableOpacity style={styles.primaryAction} onPress={() => navigation.navigate('Routines')}>
-            <Ionicons name="play-circle" size={22} color="#0B1D3A" />
+            <Ionicons name="play-circle" size={22} color={colors.background} />
             <Text style={styles.primaryActionText}>Start Workout</Text>
           </TouchableOpacity>
         </View>
@@ -187,7 +184,7 @@ export default function HomeScreen({ navigation }) {
 
         {recentWorkouts.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="barbell-outline" size={40} color={COLORS.textSecondary} />
+            <Ionicons name="barbell-outline" size={40} color={colors.textSecondary} />
             <Text style={styles.emptyStateText}>No workouts logged yet.</Text>
             <Text style={styles.emptyStateSubtext}>Start a routine to see it here.</Text>
           </View>
@@ -211,21 +208,21 @@ export default function HomeScreen({ navigation }) {
               )}
               <View style={styles.workoutCardStatsRow}>
                 <View style={styles.workoutCardStat}>
-                  <Ionicons name="time-outline" size={14} color={COLORS.textSecondary} />
+                  <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
                   <Text style={styles.workoutCardStatText}>{formatDuration(workout.duration_seconds)}</Text>
                 </View>
                 <View style={styles.workoutCardStat}>
-                  <Ionicons name="barbell-outline" size={14} color={COLORS.textSecondary} />
+                  <Ionicons name="barbell-outline" size={14} color={colors.textSecondary} />
                   <Text style={styles.workoutCardStatText}>{Math.round(workout.totalVolume).toLocaleString()} kg</Text>
                 </View>
                 <View style={styles.workoutCardStat}>
-                  <Ionicons name="layers-outline" size={14} color={COLORS.textSecondary} />
+                  <Ionicons name="layers-outline" size={14} color={colors.textSecondary} />
                   <Text style={styles.workoutCardStatText}>{workout.totalSets} sets</Text>
                 </View>
                 {workout.prCount > 0 && (
                   <View style={styles.workoutCardStat}>
-                    <Ionicons name="trophy" size={14} color={COLORS.accent} />
-                    <Text style={[styles.workoutCardStatText, { color: COLORS.accent }]}>{workout.prCount} PR</Text>
+                    <Ionicons name="trophy" size={14} color={colors.accent} />
+                    <Text style={[styles.workoutCardStatText, { color: colors.accent }]}>{workout.prCount} PR</Text>
                   </View>
                 )}
               </View>
@@ -237,8 +234,8 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: 20, paddingBottom: 40 },
   topRow: {
     flexDirection: 'row',
@@ -246,13 +243,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 20,
   },
-  greeting: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
-  appName: { color: COLORS.textPrimary, fontSize: 26, fontWeight: '800', marginTop: 2 },
+  greeting: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
+  appName: { color: colors.textPrimary, fontSize: 26, fontWeight: '800', marginTop: 2 },
   bodyLogButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -264,27 +261,27 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 16,
   },
-  streakText: { color: COLORS.accent, fontWeight: '700', fontSize: 14, marginLeft: 8 },
+  streakText: { color: colors.accent, fontWeight: '700', fontSize: 14, marginLeft: 8 },
   statsRow: { flexDirection: 'row', marginBottom: 16 },
   statCard: {
     flex: 1,
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     paddingVertical: 16,
     paddingHorizontal: 10,
     marginRight: 10,
     alignItems: 'center',
   },
-  statValue: { color: COLORS.textPrimary, fontSize: 20, fontWeight: '800' },
-  statLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 4, textAlign: 'center' },
+  statValue: { color: colors.textPrimary, fontSize: 20, fontWeight: '800' },
+  statLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 4, textAlign: 'center' },
   sectionCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 18,
     marginBottom: 16,
   },
-  sectionTitle: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 14 },
-  sectionTitleLarge: { color: COLORS.textPrimary, fontSize: 19, fontWeight: '800' },
+  sectionTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginBottom: 14 },
+  sectionTitleLarge: { color: colors.textPrimary, fontSize: 19, fontWeight: '800' },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -295,8 +292,8 @@ const styles = StyleSheet.create({
   activityCol: { alignItems: 'center', width: 32 },
   activityBarTrack: { height: 58, justifyContent: 'flex-end' },
   activityBar: { width: 18, borderRadius: 9 },
-  activityLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 8 },
-  activityLabelToday: { color: COLORS.accent, fontWeight: '800' },
+  activityLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 8 },
+  activityLabelToday: { color: colors.accent, fontWeight: '800' },
   prRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8 },
   prIconWrap: {
     width: 32,
@@ -307,38 +304,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 10,
   },
-  prExerciseName: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '700' },
-  prDetail: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
-  prDate: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '600' },
+  prExerciseName: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  prDetail: { color: colors.textSecondary, fontSize: 12, marginTop: 2 },
+  prDate: { color: colors.textSecondary, fontSize: 11, fontWeight: '600' },
   quickActionsRow: { marginBottom: 24 },
   primaryAction: {
     flexDirection: 'row',
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     borderRadius: 18,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: COLORS.accent,
+    shadowColor: colors.accent,
     shadowOpacity: 0.35,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 4,
   },
-  primaryActionText: { color: '#0B1D3A', fontWeight: '800', fontSize: 16, marginLeft: 8 },
+  primaryActionText: { color: colors.background, fontWeight: '800', fontSize: 16, marginLeft: 8 },
   emptyState: { alignItems: 'center', paddingVertical: 32 },
-  emptyStateText: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 12 },
-  emptyStateSubtext: { color: COLORS.textSecondary, fontSize: 13, marginTop: 4 },
+  emptyStateText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 12 },
+  emptyStateSubtext: { color: colors.textSecondary, fontSize: 13, marginTop: 4 },
   workoutCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
   },
   workoutCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  workoutCardTitle: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', flex: 1, marginRight: 8 },
-  workoutCardDate: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600' },
-  workoutCardMuscles: { color: COLORS.accent, fontSize: 12, fontWeight: '600', marginTop: 4 },
+  workoutCardTitle: { color: colors.textPrimary, fontSize: 16, fontWeight: '700', flex: 1, marginRight: 8 },
+  workoutCardDate: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  workoutCardMuscles: { color: colors.accent, fontSize: 12, fontWeight: '600', marginTop: 4 },
   workoutCardStatsRow: { flexDirection: 'row', marginTop: 12, flexWrap: 'wrap' },
   workoutCardStat: { flexDirection: 'row', alignItems: 'center', marginRight: 16, marginTop: 4 },
-  workoutCardStatText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 4 },
+  workoutCardStatText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginLeft: 4 },
 });

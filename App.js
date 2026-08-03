@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -7,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 
 import { initDatabase } from './database/db';
+import { ThemeProvider, useTheme } from './theme/ThemeContext';
 
 import HomeScreen from './screens/HomeScreen';
 import RoutinesScreen from './screens/RoutinesScreen';
@@ -19,43 +20,15 @@ import FinishWorkoutScreen from './screens/FinishWorkoutScreen';
 import BodyLogScreen from './screens/BodyLogScreen';
 import ExerciseHistoryScreen from './screens/ExerciseHistoryScreen';
 import WorkoutSummaryScreen from './screens/WorkoutSummaryScreen';
-
+import SettingsScreen from './screens/SettingsScreen'; // <-- Added Settings Screen
 
 const Stack = createNativeStackNavigator();
 
-export const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
-
-const NavTheme = {
-  ...DefaultTheme,
-  dark: true,
-  colors: {
-    ...DefaultTheme.colors,
-    background: COLORS.background,
-    card: COLORS.background,
-    text: COLORS.textPrimary,
-    border: COLORS.background,
-    primary: COLORS.accent,
-  },
-};
-
-const screenOptions = {
-  headerStyle: { backgroundColor: COLORS.background },
-  headerTintColor: COLORS.textPrimary,
-  headerTitleStyle: { fontWeight: '700', fontSize: 17 },
-  headerShadowVisible: false,
-  contentStyle: { backgroundColor: COLORS.background },
-  headerBackTitleVisible: false,
-};
-
-export default function App() {
+// 1. We extract the actual navigation and app logic into a child component
+// so it can consume the useTheme() hook from the ThemeProvider.
+function MainApp() {
+  const { colors } = useTheme();
+  
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
 
@@ -68,20 +41,44 @@ export default function App() {
     }
   }, []);
 
+  // 2. Navigation theme dynamically pulls from context
+  const NavTheme = {
+    ...DefaultTheme,
+    dark: true,
+    colors: {
+      ...DefaultTheme.colors,
+      background: colors.background,
+      card: colors.background,
+      text: colors.textPrimary,
+      border: colors.background,
+      primary: colors.accent,
+    },
+  };
+
+  // 3. Screen options dynamically pull from context
+  const screenOptions = {
+    headerStyle: { backgroundColor: colors.background },
+    headerTintColor: colors.textPrimary,
+    headerTitleStyle: { fontWeight: '700', fontSize: 17 },
+    headerShadowVisible: false,
+    contentStyle: { backgroundColor: colors.background },
+    headerBackButtonDisplayMode: 'minimal',
+  };
+
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Ionicons name="warning-outline" size={48} color={COLORS.danger} />
-        <Text style={styles.errorTitle}>Something went wrong</Text>
-        <Text style={styles.errorMessage}>{error}</Text>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <Ionicons name="warning-outline" size={48} color={colors.danger} />
+        <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>Something went wrong</Text>
+        <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>{error}</Text>
       </View>
     );
   }
 
   if (!ready) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={COLORS.accent} />
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
@@ -91,7 +88,18 @@ export default function App() {
       <StatusBar style="light" />
       <NavigationContainer theme={NavTheme}>
         <Stack.Navigator initialRouteName="Home" screenOptions={screenOptions}>
-          <Stack.Screen name="Home" component={HomeScreen} options={{ title: 'Fishy Gains' }} />
+          <Stack.Screen 
+            name="Home" 
+            component={HomeScreen} 
+            options={({ navigation }) => ({ 
+              title: 'Fishy Gains',
+              headerRight: () => (
+                <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+                  <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
+                </TouchableOpacity>
+              )
+            })} 
+          />
           <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
           <Stack.Screen name="EditRoutine" component={EditRoutineScreen} options={{ title: 'Edit Routine' }} />
           <Stack.Screen name="StartRoutine" component={StartRoutineScreen} options={{ title: 'Routine Preview' }} />
@@ -102,28 +110,35 @@ export default function App() {
           <Stack.Screen name="BodyLog" component={BodyLogScreen} options={{ title: 'Body Tracking' }} />
           <Stack.Screen name="ExerciseHistory" component={ExerciseHistoryScreen} options={{ title: 'Exercise History' }} />
           <Stack.Screen name="WorkoutSummary" component={WorkoutSummaryScreen} options={{ title: 'Workout Summary' }} />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false}} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   );
 }
 
+// 4. The root App component now simply provides the Theme context to everything inside it
+export default function App() {
+  return (
+    <ThemeProvider>
+      <MainApp />
+    </ThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   centered: {
     flex: 1,
-    backgroundColor: COLORS.background,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
   },
   errorTitle: {
-    color: COLORS.textPrimary,
     fontSize: 18,
     fontWeight: '700',
     marginTop: 16,
   },
   errorMessage: {
-    color: COLORS.textSecondary,
     fontSize: 14,
     marginTop: 8,
     textAlign: 'center',

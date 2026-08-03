@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,16 +17,7 @@ import * as Sharing from 'expo-sharing';
 
 import { finishWorkout, getWorkoutDetail } from '../database/db';
 import ShareableWorkoutCard from '../components/ShareableWorkoutCard';
-
-const COLORS = {
-  background: '#0B1D3A',
-  card: '#12274D',
-  cardAlt: '#162C54',
-  accent: '#00D2D3',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#7C8DAF',
-  danger: '#FF5C5C',
-};
+import { useTheme } from '../theme/ThemeContext';
 
 function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
@@ -45,6 +36,9 @@ function estimateCalories(durationSeconds, totalVolume) {
 }
 
 export default function FinishWorkoutScreen({ route, navigation }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const { workoutId, durationSeconds } = route.params;
   const [workout, setWorkout] = useState(null);
   const [notes, setNotes] = useState('');
@@ -100,29 +94,29 @@ export default function FinishWorkoutScreen({ route, navigation }) {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.successIconWrap}>
-            <Ionicons name="checkmark-circle" size={56} color={COLORS.accent} />
+            <Ionicons name="checkmark-circle" size={56} color={colors.accent} />
           </View>
           <Text style={styles.title}>Workout Complete!</Text>
           <Text style={styles.subtitle}>{workout.name}</Text>
 
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Ionicons name="time-outline" size={20} color={COLORS.accent} />
+              <Ionicons name="time-outline" size={20} color={colors.accent} />
               <Text style={styles.statValue}>{formatDuration(durationSeconds)}</Text>
               <Text style={styles.statLabel}>Duration</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="barbell-outline" size={20} color={COLORS.accent} />
+              <Ionicons name="barbell-outline" size={20} color={colors.accent} />
               <Text style={styles.statValue}>{Math.round(workout.totalVolume).toLocaleString()}</Text>
               <Text style={styles.statLabel}>Volume (kg)</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="layers-outline" size={20} color={COLORS.accent} />
+              <Ionicons name="layers-outline" size={20} color={colors.accent} />
               <Text style={styles.statValue}>{workout.totalSets}</Text>
               <Text style={styles.statLabel}>Sets</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="flame-outline" size={20} color={COLORS.accent} />
+              <Ionicons name="flame-outline" size={20} color={colors.accent} />
               <Text style={styles.statValue}>{calories}</Text>
               <Text style={styles.statLabel}>Est. Calories</Text>
             </View>
@@ -130,7 +124,7 @@ export default function FinishWorkoutScreen({ route, navigation }) {
 
           {workout.prCount > 0 && (
             <View style={styles.prBanner}>
-              <Ionicons name="trophy" size={20} color="#0B1D3A" />
+              <Ionicons name="trophy" size={20} color={colors.background} />
               <Text style={styles.prBannerText}>
                 {workout.prCount} Personal Record{workout.prCount > 1 ? 's' : ''} today!
               </Text>
@@ -141,7 +135,7 @@ export default function FinishWorkoutScreen({ route, navigation }) {
           <TextInput
             style={styles.notesInput}
             placeholder="How did it feel? Anything to remember for next time..."
-            placeholderTextColor={COLORS.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             value={notes}
             onChangeText={setNotes}
             onBlur={handleSaveNotes}
@@ -174,7 +168,7 @@ export default function FinishWorkoutScreen({ route, navigation }) {
           </View>
 
           <TouchableOpacity style={styles.shareButton} onPress={handleShare} disabled={sharing}>
-            <Ionicons name="share-social-outline" size={20} color={COLORS.accent} />
+            <Ionicons name="share-social-outline" size={20} color={colors.accent} />
             <Text style={styles.shareButtonText}>{sharing ? 'Preparing...' : 'Share Workout Card'}</Text>
           </TouchableOpacity>
 
@@ -187,71 +181,71 @@ export default function FinishWorkoutScreen({ route, navigation }) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: COLORS.background },
+const createStyles = (colors) => StyleSheet.create({
+  safeArea: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: 20, paddingBottom: 40, alignItems: 'stretch' },
   successIconWrap: { alignItems: 'center', marginTop: 8, marginBottom: 12 },
-  title: { color: COLORS.textPrimary, fontSize: 24, fontWeight: '800', textAlign: 'center' },
-  subtitle: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: 4, marginBottom: 20 },
+  title: { color: colors.textPrimary, fontSize: 24, fontWeight: '800', textAlign: 'center' },
+  subtitle: { color: colors.textSecondary, fontSize: 14, fontWeight: '600', textAlign: 'center', marginTop: 4, marginBottom: 20 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
   statCard: {
     width: '48%',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
   },
-  statValue: { color: COLORS.textPrimary, fontSize: 20, fontWeight: '800', marginTop: 8 },
-  statLabel: { color: COLORS.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 2 },
+  statValue: { color: colors.textPrimary, fontSize: 20, fontWeight: '800', marginTop: 8 },
+  statLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 2 },
   prBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     borderRadius: 16,
     paddingVertical: 12,
     marginBottom: 8,
   },
-  prBannerText: { color: '#0B1D3A', fontWeight: '800', fontSize: 14, marginLeft: 8 },
-  sectionLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginTop: 20, marginBottom: 10 },
+  prBannerText: { color: colors.background, fontWeight: '800', fontSize: 14, marginLeft: 8 },
+  sectionLabel: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginTop: 20, marginBottom: 10 },
   notesInput: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 16,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontSize: 14,
     minHeight: 80,
     textAlignVertical: 'top',
   },
   exerciseSummaryCard: {
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 14,
     padding: 14,
     marginBottom: 8,
   },
-  exerciseSummaryName: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '700' },
-  exerciseSummaryMeta: { color: COLORS.textSecondary, fontSize: 12, marginTop: 3 },
+  exerciseSummaryName: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
+  exerciseSummaryMeta: { color: colors.textSecondary, fontSize: 12, marginTop: 3 },
   hiddenCardWrap: { position: 'absolute', top: -10000, left: -10000 },
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLORS.card,
+    backgroundColor: colors.card,
     borderRadius: 16,
     paddingVertical: 16,
     marginTop: 24,
     borderWidth: 1,
     borderColor: 'rgba(0,210,211,0.3)',
   },
-  shareButtonText: { color: COLORS.accent, fontWeight: '700', fontSize: 15, marginLeft: 8 },
+  shareButtonText: { color: colors.accent, fontWeight: '700', fontSize: 15, marginLeft: 8 },
   doneButton: {
-    backgroundColor: COLORS.accent,
+    backgroundColor: colors.accent,
     borderRadius: 16,
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 12,
   },
-  doneButtonText: { color: '#0B1D3A', fontWeight: '800', fontSize: 16 },
+  doneButtonText: { color: colors.background, fontWeight: '800', fontSize: 16 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emptyStateText: { color: COLORS.textSecondary, fontSize: 14, fontWeight: '600' },
+  emptyStateText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
 });
