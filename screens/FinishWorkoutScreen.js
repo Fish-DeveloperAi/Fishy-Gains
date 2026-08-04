@@ -15,9 +15,17 @@ import { Ionicons } from '@expo/vector-icons';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 
-import { finishWorkout, getWorkoutDetail } from '../database/db';
+import { 
+  finishWorkout, 
+  getWorkoutDetail, 
+  getUserGamificationStats, 
+  getUnlockedAchievements, 
+  saveUnlockedAchievement 
+} from '../database/db';
 import ShareableWorkoutCard from '../components/ShareableWorkoutCard';
 import { useTheme } from '../theme/ThemeContext';
+import { useGamification } from '../context/GamificationContext';
+import { evaluateAchievements } from '../utils/gamificationEngine';
 
 function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
@@ -38,6 +46,7 @@ function estimateCalories(durationSeconds, totalVolume) {
 export default function FinishWorkoutScreen({ route, navigation }) {
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const { triggerAchievement } = useGamification();
 
   const { workoutId, durationSeconds } = route.params;
   const [workout, setWorkout] = useState(null);
@@ -46,9 +55,24 @@ export default function FinishWorkoutScreen({ route, navigation }) {
   const cardRef = useRef(null);
 
   useEffect(() => {
+    // 1. Finish the workout in the DB
     finishWorkout(workoutId, durationSeconds, '');
     const detail = getWorkoutDetail(workoutId);
     setWorkout(detail);
+
+    // 2. Run Gamification Engine
+    const currentStats = getUserGamificationStats(workoutId);
+    const previouslyUnlockedIds = getUnlockedAchievements();
+    const newlyUnlocked = evaluateAchievements(currentStats, previouslyUnlockedIds);
+
+    // 3. Process new achievements
+    if (newlyUnlocked.length > 0) {
+      newlyUnlocked.forEach(achievement => {
+        saveUnlockedAchievement(achievement.id);
+      });
+      // Sends the entire array to the queue system in gamificationcontext 
+      triggerAchievement(newlyUnlocked);
+    }
   }, [workoutId, durationSeconds]);
 
   const handleSaveNotes = () => {

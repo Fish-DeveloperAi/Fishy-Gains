@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { initDatabase } from './database/db';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
+import { GamificationProvider } from './context/GamificationContext'; 
 
 import HomeScreen from './screens/HomeScreen';
 import RoutinesScreen from './screens/RoutinesScreen';
@@ -17,15 +18,14 @@ import ExercisePickerScreen from './screens/ExercisePickerScreen';
 import AddExerciseScreen from './screens/AddExerciseScreen';
 import LogWorkoutScreen from './screens/LogWorkoutScreen';
 import FinishWorkoutScreen from './screens/FinishWorkoutScreen';
+import AchievementsScreen from './screens/AchievementsScreen';
 import BodyLogScreen from './screens/BodyLogScreen';
 import ExerciseHistoryScreen from './screens/ExerciseHistoryScreen';
 import WorkoutSummaryScreen from './screens/WorkoutSummaryScreen';
-import SettingsScreen from './screens/SettingsScreen'; // <-- Added Settings Screen
+import SettingsScreen from './screens/SettingsScreen'; 
 
 const Stack = createNativeStackNavigator();
 
-// 1. We extract the actual navigation and app logic into a child component
-// so it can consume the useTheme() hook from the ThemeProvider.
 function MainApp() {
   const { colors } = useTheme();
   
@@ -41,7 +41,6 @@ function MainApp() {
     }
   }, []);
 
-  // 2. Navigation theme dynamically pulls from context
   const NavTheme = {
     ...DefaultTheme,
     dark: true,
@@ -55,7 +54,6 @@ function MainApp() {
     },
   };
 
-  // 3. Screen options dynamically pull from context
   const screenOptions = {
     headerStyle: { backgroundColor: colors.background },
     headerTintColor: colors.textPrimary,
@@ -111,17 +109,23 @@ function MainApp() {
           <Stack.Screen name="ExerciseHistory" component={ExerciseHistoryScreen} options={{ title: 'Exercise History' }} />
           <Stack.Screen name="WorkoutSummary" component={WorkoutSummaryScreen} options={{ title: 'Workout Summary' }} />
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false}} />
+          <Stack.Screen name="Achievements" component={AchievementsScreen} options={{ title: 'Trophy Case' }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   );
 }
 
-// 4. The root App component now simply provides the Theme context to everything inside it
 export default function App() {
   return (
     <ThemeProvider>
-      <MainApp />
+      {/* 
+        GamificationProvider is placed here so it has access to the Theme, 
+        and provides the achievement context to the entire MainApp stack.
+      */}
+      <GamificationProvider>
+        <MainApp />
+      </GamificationProvider>
     </ThemeProvider>
   );
 }
