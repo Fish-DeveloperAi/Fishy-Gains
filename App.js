@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { initDatabase } from './database/db';
 import { ThemeProvider, useTheme } from './theme/ThemeContext';
 import { GamificationProvider } from './context/GamificationContext'; 
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 
 import HomeScreen from './screens/HomeScreen';
 import RoutinesScreen from './screens/RoutinesScreen';
@@ -23,21 +24,28 @@ import BodyLogScreen from './screens/BodyLogScreen';
 import ExerciseHistoryScreen from './screens/ExerciseHistoryScreen';
 import WorkoutSummaryScreen from './screens/WorkoutSummaryScreen';
 import SettingsScreen from './screens/SettingsScreen'; 
+import ThemePickerScreen from './screens/ThemePickerScreen';
 
 const Stack = createNativeStackNavigator();
 
 function MainApp() {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   
   const [ready, setReady] = useState(false);
   const [error, setError] = useState(null);
+
+  // `t` is kept in a ref so switching language never re-runs the database
+  // initialisation (the effect used to list `t` as a dependency).
+  const tRef = useRef(t);
+  tRef.current = t;
 
   useEffect(() => {
     try {
       initDatabase();
       setReady(true);
     } catch (e) {
-      setError(e && e.message ? e.message : 'Failed to initialize database');
+      setError(e && e.message ? e.message : tRef.current('failedToInitDb'));
     }
   }, []);
 
@@ -67,7 +75,7 @@ function MainApp() {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Ionicons name="warning-outline" size={48} color={colors.danger} />
-        <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>Something went wrong</Text>
+        <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>{t('somethingWentWrong')}</Text>
         <Text style={[styles.errorMessage, { color: colors.textSecondary }]}>{error}</Text>
       </View>
     );
@@ -98,18 +106,19 @@ function MainApp() {
               )
             })} 
           />
-          <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: 'Routines' }} />
-          <Stack.Screen name="EditRoutine" component={EditRoutineScreen} options={{ title: 'Edit Routine' }} />
-          <Stack.Screen name="StartRoutine" component={StartRoutineScreen} options={{ title: 'Routine Preview' }} />
-          <Stack.Screen name="ExercisePicker" component={ExercisePickerScreen} options={{ title: 'Add Exercise', presentation: 'modal' }} />
-          <Stack.Screen name="AddExercise" component={AddExerciseScreen} options={{ title: 'New Exercise', presentation: 'modal' }} />
-          <Stack.Screen name="LogWorkout" component={LogWorkoutScreen} options={{ title: 'Workout', headerBackVisible: false, gestureEnabled: false }} />
-          <Stack.Screen name="FinishWorkout" component={FinishWorkoutScreen} options={{ title: 'Workout Complete', headerBackVisible: false, gestureEnabled: false }} />
-          <Stack.Screen name="BodyLog" component={BodyLogScreen} options={{ title: 'Body Tracking' }} />
-          <Stack.Screen name="ExerciseHistory" component={ExerciseHistoryScreen} options={{ title: 'Exercise History' }} />
-          <Stack.Screen name="WorkoutSummary" component={WorkoutSummaryScreen} options={{ title: 'Workout Summary' }} />
+          <Stack.Screen name="Routines" component={RoutinesScreen} options={{ title: t('routinesTitle') }} />
+          <Stack.Screen name="EditRoutine" component={EditRoutineScreen} options={{ title: t('editRoutine') }} />
+          <Stack.Screen name="StartRoutine" component={StartRoutineScreen} options={{ title: t('routinePreview') }} />
+          <Stack.Screen name="ExercisePicker" component={ExercisePickerScreen} options={{ title: t('addExercise'), presentation: 'modal' }} />
+          <Stack.Screen name="AddExercise" component={AddExerciseScreen} options={{ title: t('newExerciseTitle'), presentation: 'modal' }} />
+          <Stack.Screen name="LogWorkout" component={LogWorkoutScreen} options={{ title: t('workoutTitle'), headerBackVisible: false, gestureEnabled: false }} />
+          <Stack.Screen name="FinishWorkout" component={FinishWorkoutScreen} options={{ title: t('workoutComplete'), headerBackVisible: false, gestureEnabled: false }} />
+          <Stack.Screen name="BodyLog" component={BodyLogScreen} options={{ title: t('bodyTracking') }} />
+          <Stack.Screen name="ExerciseHistory" component={ExerciseHistoryScreen} options={{ title: t('exerciseHistoryTitle') }} />
+          <Stack.Screen name="WorkoutSummary" component={WorkoutSummaryScreen} options={{ title: t('workoutSummary') }} />
           <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: false}} />
-          <Stack.Screen name="Achievements" component={AchievementsScreen} options={{ title: 'Trophy Case' }} />
+          <Stack.Screen name="Achievements" component={AchievementsScreen} options={{ title: t('trophyCase') }} />
+          <Stack.Screen name="ThemePickerScreen" component={ThemePickerScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
@@ -119,13 +128,11 @@ function MainApp() {
 export default function App() {
   return (
     <ThemeProvider>
-      {/* 
-        GamificationProvider is placed here so it has access to the Theme, 
-        and provides the achievement context to the entire MainApp stack.
-      */}
-      <GamificationProvider>
-        <MainApp />
-      </GamificationProvider>
+      <LanguageProvider>
+        <GamificationProvider>
+          <MainApp />
+        </GamificationProvider>
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

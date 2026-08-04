@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useLanguage } from '../context/LanguageContext';
 
 const PALETTE = {
   background: '#0B1D3A',
@@ -11,6 +12,7 @@ const PALETTE = {
 };
 
 export default function RestTimer({ duration = 90, active, onFinish }) {
+  const { t } = useLanguage();
   const [secondsLeft, setSecondsLeft] = useState(duration);
   const intervalRef = useRef(null);
 
@@ -44,10 +46,10 @@ export default function RestTimer({ duration = 90, active, onFinish }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Rest</Text>
+      <Text style={styles.label}>{t('rest')}</Text>
       <Text style={styles.timer}>{mins}:{secs.toString().padStart(2, '0')}</Text>
       <TouchableOpacity onPress={handleSkip} style={styles.skipButton}>
-        <Text style={styles.skipText}>Skip</Text>
+        <Text style={styles.skipText}>{t('skip')}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -80,7 +82,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6, 
     paddingHorizontal: 16, 
     borderRadius: 8, 
-    backgroundColor: 'rgba(0, 210, 211, 0.1)' // Very faint cyan background
+    backgroundColor: 'rgba(0, 210, 211, 0.1)' 
   },
   skipText: { 
     color: PALETTE.accent, 

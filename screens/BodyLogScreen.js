@@ -21,14 +21,16 @@ const screenWidth = Dimensions.get('window').width;
 
 import { getBodyLogs, addBodyLog, deleteBodyLog } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
-function formatDate(dateString) {
+function formatDate(dateString, locale) {
   const d = new Date(dateString.replace(' ', 'T'));
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
 export default function BodyLogScreen() {
   const { colors } = useTheme();
+  const { t, locale } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [logs, setLogs] = useState([]);
@@ -64,15 +66,15 @@ export default function BodyLogScreen() {
     const arms = armsInput.trim() ? parseFloat(armsInput) : null;
     
     if (weight === null && bodyFat === null) {
-      Alert.alert('Enter a Value', 'Please enter a weight or body fat percentage.');
+      Alert.alert(t('enterValue'), t('enterWeightOrFat'));
       return;
     }
     if (weight !== null && (isNaN(weight) || weight <= 0)) {
-      Alert.alert('Invalid Weight', 'Please enter a valid weight.');
+      Alert.alert(t('invalidWeight'), t('invalidWeightMsg'));
       return;
     }
     if (bodyFat !== null && (isNaN(bodyFat) || bodyFat < 0 || bodyFat > 100)) {
-      Alert.alert('Invalid Body Fat', 'Please enter a valid percentage between 0 and 100.');
+      Alert.alert(t('invalidBodyFat'), t('invalidBodyFatMsg'));
       return;
     }
     
@@ -104,7 +106,7 @@ export default function BodyLogScreen() {
           <View>
             <View style={styles.summaryRow}>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>CURRENT WEIGHT</Text>
+                <Text style={styles.summaryLabel}>{t('currentWeight')}</Text>
                 <Text style={styles.summaryValue}>{latest && latest.weight != null ? `${latest.weight} kg` : '—'}</Text>
                 {weightDelta !== null && (
                   <View style={styles.deltaRow}>
@@ -118,7 +120,7 @@ export default function BodyLogScreen() {
                 )}
               </View>
               <View style={styles.summaryCard}>
-                <Text style={styles.summaryLabel}>BODY FAT</Text>
+                <Text style={styles.summaryLabel}>{t('bodyFatLabel')}</Text>
                 <Text style={styles.summaryValue}>{latest && latest.body_fat != null ? `${latest.body_fat}%` : '—'}</Text>
               </View>
             </View>
@@ -172,16 +174,16 @@ export default function BodyLogScreen() {
 
             <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
               <Ionicons name="add-circle" size={20} color={colors.accent} />
-              <Text style={styles.addButtonText}>Log Entry</Text>
+              <Text style={styles.addButtonText}>{t('logEntry')}</Text>
             </TouchableOpacity>
 
-            <Text style={styles.sectionLabel}>HISTORY</Text>
+            <Text style={styles.sectionLabel}>{t('history')}</Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="body-outline" size={36} color={colors.textSecondary} />
-            <Text style={styles.emptyStateText}>No entries yet</Text>
+            <Text style={styles.emptyStateText}>{t('noEntriesYet')}</Text>
           </View>
         }
         renderItem={({ item }) => {
@@ -203,21 +205,21 @@ export default function BodyLogScreen() {
               {isExpanded && (
                 <View style={styles.expandedMeasurementsBox}>
                   <View style={styles.measurementItem}>
-                    <Text style={styles.measurementLabel}>Chest</Text>
+                    <Text style={styles.measurementLabel}>{t('chest')}</Text>
                     <Text style={styles.measurementValue}>
                       {item.chest ? `${item.chest} cm` : '--'}
                     </Text>
                   </View>
                   
                   <View style={styles.measurementItem}>
-                    <Text style={styles.measurementLabel}>Waist</Text>
+                    <Text style={styles.measurementLabel}>{t('waist')}</Text>
                     <Text style={styles.measurementValue}>
                       {item.waist ? `${item.waist} cm` : '--'}
                     </Text>
                   </View>
                   
                   <View style={styles.measurementItem}>
-                    <Text style={styles.measurementLabel}>Arms</Text>
+                    <Text style={styles.measurementLabel}>{t('arms')}</Text>
                     <Text style={styles.measurementValue}>
                       {item.arms ? `${item.arms} cm` : '--'}
                     </Text>
@@ -232,53 +234,53 @@ export default function BodyLogScreen() {
       <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={() => setModalVisible(false)}>
         <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>New Body Log</Text>
+            <Text style={styles.modalTitle}>{t('newBodyLog')}</Text>
             
-            <Text style={styles.modalInputLabel}>WEIGHT (KG)</Text>
+            <Text style={styles.modalInputLabel}>{t('weightKg')}</Text>
             <TextInput
               style={styles.modalInput}
               keyboardType="decimal-pad"
-              placeholder="e.g. 75"
+              placeholder={t('egWeightValue')}
               placeholderTextColor={colors.textSecondary}
               value={weightInput}
               onChangeText={setWeightInput}
             />
             
-            <Text style={styles.modalInputLabel}>CHEST (CM)</Text>
+            <Text style={styles.modalInputLabel}>{t('chestCm')}</Text>
             <TextInput
               style={styles.modalInput}
               keyboardType="decimal-pad"
-              placeholder="Optional"
+              placeholder={t('optional')}
               placeholderTextColor={colors.textSecondary}
               value={chestInput}
               onChangeText={setChestInput}
             />
 
-            <Text style={styles.modalInputLabel}>WAIST (CM)</Text>
+            <Text style={styles.modalInputLabel}>{t('waistCm')}</Text>
             <TextInput
               style={styles.modalInput}
               keyboardType="decimal-pad"
-              placeholder="Optional"
+              placeholder={t('optional')}
               placeholderTextColor={colors.textSecondary}
               value={waistInput}
               onChangeText={setWaistInput}
             />
 
-            <Text style={styles.modalInputLabel}>ARMS (CM)</Text>
+            <Text style={styles.modalInputLabel}>{t('armsCm')}</Text>
             <TextInput
               style={styles.modalInput}
               keyboardType="decimal-pad"
-              placeholder="Optional"
+              placeholder={t('optional')}
               placeholderTextColor={colors.textSecondary}
               value={armsInput}
               onChangeText={setArmsInput}
             />
             
-            <Text style={styles.modalInputLabel}>BODY FAT %</Text>
+            <Text style={styles.modalInputLabel}>{t('bodyFatPercent')}</Text>
             <TextInput
               style={styles.modalInput}
               keyboardType="decimal-pad"
-              placeholder="Optional"
+              placeholder={t('optional')}
               placeholderTextColor={colors.textSecondary}
               value={bodyFatInput}
               onChangeText={setBodyFatInput}
@@ -296,10 +298,10 @@ export default function BodyLogScreen() {
                   setModalVisible(false);
                 }}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalSaveButton} onPress={handleAddLog}>
-                <Text style={styles.modalSaveText}>Save</Text>
+                <Text style={styles.modalSaveText}>{t('save')}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -1,17 +1,25 @@
+// screens/SettingsScreen.js
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
-// Import your custom hook
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext'; // Adjust path if needed
 
 export default function SettingsScreen({ navigation }) {
-  // Grab the dynamic colors, the active theme, the setter, and the list of all THEMES
-  const { colors, activeTheme, setActiveTheme, THEMES } = useTheme();
+  const { colors, activeTheme, THEMES } = useTheme();
   
-  // Generate styles dynamically
+  // Bring in the language context hook
+  const { activeLanguage, changeLanguage, t } = useLanguage();
+  
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const LANGUAGES = [
+    { id: 'en', name: 'English' },
+    { id: 'ar', name: 'Arabic (العربية)' },
+    { id: 'fr', name: 'French (Français)' },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom', 'top']}>
@@ -19,91 +27,82 @@ export default function SettingsScreen({ navigation }) {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Appearance</Text>
-        {/* Spacer for centering */}
+        {/* Translate Header */}
+        <Text style={styles.headerTitle}>{t('settings')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.sectionLabel}>APP THEME</Text>
         
-        {Object.values(THEMES).map((theme) => {
-          const isActive = activeTheme === theme.id;
-          
-          return (
-            <TouchableOpacity 
-              key={theme.id}
-              style={[styles.themeCard, isActive && styles.themeCardActive]}
-              onPress={() => setActiveTheme(theme.id)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.themeInfo}>
-                <View style={[styles.colorPreview, { backgroundColor: theme.background }]}>
-                  <View style={[styles.colorDot, { backgroundColor: theme.accent }]} />
-                  <View style={[styles.colorDot, { backgroundColor: theme.card }]} />
-                </View>
-                <Text style={styles.themeName}>{theme.name}</Text>
-              </View>
-              
-              <Ionicons 
-                name={isActive ? "checkmark-circle" : "ellipse-outline"} 
-                size={24} 
-                color={isActive ? colors.accent : colors.textSecondary} 
-              />
-            </TouchableOpacity>
-          );
-        })}
+        {/* Translate Section Label */}
+        <Text style={styles.sectionLabel}>{t('preferences')}</Text>
+        
+        <TouchableOpacity 
+          style={styles.settingCard}
+          onPress={() => navigation.navigate('ThemePickerScreen')} 
+          activeOpacity={0.8}
+        >
+          <View style={styles.settingInfo}>
+            <View style={[styles.iconContainer, { backgroundColor: colors.cardAlt }]}>
+              <Ionicons name="color-palette-outline" size={20} color={colors.accent} />
+            </View>
+            <View>
+              {/* Translate Settings Name */}
+              <Text style={styles.settingName}>{t('appearance')}</Text>
+              <Text style={styles.settingSubtext}>
+                {THEMES[activeTheme]?.name || t('selectTheme')}
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        </TouchableOpacity>
+
+        {/* Translate Language Section */}
+        <Text style={[styles.sectionLabel, { marginTop: 24 }]}>{t('language')}</Text>
+        
+        <View style={styles.cardGroup}>
+          {LANGUAGES.map((lang, index) => {
+            const isActive = activeLanguage === lang.id;
+            const isLast = index === LANGUAGES.length - 1;
+            
+            return (
+              <TouchableOpacity 
+                key={lang.id}
+                style={[styles.languageRow, !isLast && styles.borderBottom]}
+                // Trigger the real context update
+                onPress={() => changeLanguage(lang.id)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.languageName, isActive && { color: colors.accent }]}>
+                  {lang.name}
+                </Text>
+                {isActive && (
+                  <Ionicons name="checkmark" size={20} color={colors.accent} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// Dynamic stylesheet function
+// Styles remain completely unchanged
 const createStyles = (COLORS) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(124,141,175,0.15)',
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(124,141,175,0.15)' },
   backButton: { padding: 4 },
   headerTitle: { color: COLORS.textPrimary, fontSize: 18, fontWeight: '800' },
   scrollContent: { padding: 20 },
-  sectionLabel: { 
-    color: COLORS.textSecondary, 
-    fontSize: 12, 
-    fontWeight: '700', 
-    letterSpacing: 1, 
-    marginBottom: 16 
-  },
-  themeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  themeCardActive: { borderColor: COLORS.accent },
-  themeInfo: { flexDirection: 'row', alignItems: 'center' },
-  colorPreview: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(124,141,175,0.2)',
-  },
-  colorDot: { width: 12, height: 12, borderRadius: 6, marginHorizontal: 2 },
-  themeName: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700' },
+  sectionLabel: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '700', letterSpacing: 1, marginBottom: 12 },
+  settingCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: COLORS.card, borderRadius: 16, padding: 16, marginBottom: 12 },
+  settingInfo: { flexDirection: 'row', alignItems: 'center' },
+  iconContainer: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  settingName: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '600', marginBottom: 4 },
+  settingSubtext: { color: COLORS.textSecondary, fontSize: 13 },
+  cardGroup: { backgroundColor: COLORS.card, borderRadius: 16, overflow: 'hidden' },
+  languageRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16, paddingHorizontal: 20 },
+  borderBottom: { borderBottomWidth: 1, borderBottomColor: 'rgba(124,141,175,0.15)' },
+  languageName: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '500' },
 });

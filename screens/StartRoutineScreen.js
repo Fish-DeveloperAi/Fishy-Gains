@@ -6,9 +6,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { getRoutineById, getRoutineExercises, createWorkout } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+// Shared DB-value translator (muscle groups, categories, equipment).
+import { translateValue } from '../utils/i18nKeys';
+
 
 export default function StartRoutineScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { routineId } = route.params;
@@ -38,7 +43,7 @@ export default function StartRoutineScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>Routine not found</Text>
+          <Text style={styles.emptyStateText}>{t('routineNotFound')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -56,22 +61,22 @@ export default function StartRoutineScreen({ route, navigation }) {
             <View style={styles.summaryRow}>
               <View style={styles.summaryPill}>
                 <Ionicons name="barbell-outline" size={14} color={colors.accent} />
-                <Text style={styles.summaryText}>{exercises.length} exercises</Text>
+                <Text style={styles.summaryText}>{exercises.length} {t('exercises') ? t('exercises').toLowerCase() : 'exercises'}</Text>
               </View>
               <View style={styles.summaryPill}>
                 <Ionicons name="layers-outline" size={14} color={colors.accent} />
-                <Text style={styles.summaryText}>{totalSets} sets</Text>
+                <Text style={styles.summaryText}>{totalSets} {t('sets').toLowerCase()}</Text>
               </View>
             </View>
-            <Text style={styles.sectionLabel}>EXERCISE ORDER</Text>
+            <Text style={styles.sectionLabel}>{t('exerciseOrder').toUpperCase()}</Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="barbell-outline" size={36} color={colors.textSecondary} />
-            <Text style={styles.emptyStateText}>This routine has no exercises yet.</Text>
+            <Text style={styles.emptyStateText}>{t('routineNoExercises')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate('EditRoutine', { routineId })}>
-              <Text style={styles.editLink}>Edit Routine</Text>
+              <Text style={styles.editLink}>{t('editRoutine')}</Text>
             </TouchableOpacity>
           </View>
         }
@@ -82,7 +87,7 @@ export default function StartRoutineScreen({ route, navigation }) {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.exerciseName}>{item.name}</Text>
-              <Text style={styles.exerciseMeta}>{item.target_sets} sets · {item.muscle_group}</Text>
+              <Text style={styles.exerciseMeta}>{item.target_sets} {t('sets').toLowerCase()} · {translateValue(item.muscle_group, t)}</Text>
             </View>
           </View>
         )}
@@ -91,7 +96,7 @@ export default function StartRoutineScreen({ route, navigation }) {
         <View style={styles.footer}>
           <TouchableOpacity style={styles.startButton} onPress={handleStart}>
             <Ionicons name="play" size={20} color={colors.background} />
-            <Text style={styles.startButtonText}>Start Workout</Text>
+            <Text style={styles.startButtonText}>{t('startWorkout')}</Text>
           </TouchableOpacity>
         </View>
       )}

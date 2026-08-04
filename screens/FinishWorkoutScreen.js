@@ -24,6 +24,7 @@ import {
 } from '../database/db';
 import ShareableWorkoutCard from '../components/ShareableWorkoutCard';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useGamification } from '../context/GamificationContext';
 import { evaluateAchievements } from '../utils/gamificationEngine';
 
@@ -45,6 +46,7 @@ function estimateCalories(durationSeconds, totalVolume) {
 
 export default function FinishWorkoutScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const { triggerAchievement } = useGamification();
 
@@ -60,20 +62,30 @@ export default function FinishWorkoutScreen({ route, navigation }) {
     const detail = getWorkoutDetail(workoutId);
     setWorkout(detail);
 
-    // 2. Run Gamification Engine
+    // 2. Run the gamification engine.
+    //    The engine takes (session, lifetimeStats, alreadyUnlockedIds) - the
+    //    session object is what powers the volume / duration / early-bird /
+    //    big-three achievements.
     const currentStats = getUserGamificationStats(workoutId);
-    const previouslyUnlockedIds = getUnlockedAchievements();
-    const newlyUnlocked = evaluateAchievements(currentStats, previouslyUnlockedIds);
+    const previouslyUnlockedIds = getUnlockedAchievements() || [];
+    const session = {
+      volume: detail ? detail.totalVolume || 0 : 0,
+      duration: Math.round((durationSeconds || 0) / 60), // engine expects minutes
+      timestamp: detail && detail.date ? detail.date : new Date().toISOString(),
+      exercises: detail && detail.exercises ? detail.exercises : [],
+    };
+    const newlyUnlocked = evaluateAchievements(session, currentStats, previouslyUnlockedIds);
 
-    // 3. Process new achievements
+    // 3. Persist and queue the new achievements.
+    //    The engine returns full achievement objects, so `id` is defined here
+    //    (it previously saved `undefined` into the database).
     if (newlyUnlocked.length > 0) {
-      newlyUnlocked.forEach(achievement => {
-        saveUnlockedAchievement(achievement.id);
+      newlyUnlocked.forEach((achievement) => {
+        if (achievement && achievement.id) saveUnlockedAchievement(achievement.id);
       });
-      // Sends the entire array to the queue system in gamificationcontext 
       triggerAchievement(newlyUnlocked);
     }
-  }, [workoutId, durationSeconds]);
+  }, [workoutId, durationSeconds, triggerAchievement]);
 
   const handleSaveNotes = () => {
     finishWorkout(workoutId, durationSeconds, notes);
@@ -88,14 +100,14 @@ export default function FinishWorkoutScreen({ route, navigation }) {
       setSharing(true);
       const isAvailable = await Sharing.isAvailableAsync();
       if (!isAvailable) {
-        Alert.alert('Sharing Unavailable', 'Sharing is not available on this device.');
+        Alert.alert(t('shareUnavailable'), t('shareUnavailableMsg'));
         setSharing(false);
         return;
       }
       const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
-      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Share Your Workout' });
+      await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: t('shareYourWorkout') });
     } catch (e) {
-      Alert.alert('Share Failed', 'Could not generate the shareable image.');
+      Alert.alert(t('shareFailed'), t('shareFailedMsg'));
     } finally {
       setSharing(false);
     }
@@ -105,7 +117,7 @@ export default function FinishWorkoutScreen({ route, navigation }) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>Loading summary…</Text>
+          <Text style={styles.emptyStateText}>{t('loadingSummary')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -120,29 +132,29 @@ export default function FinishWorkoutScreen({ route, navigation }) {
           <View style={styles.successIconWrap}>
             <Ionicons name="checkmark-circle" size={56} color={colors.accent} />
           </View>
-          <Text style={styles.title}>Workout Complete!</Text>
+          <Text style={styles.title}>{t('workoutComplete')}</Text>
           <Text style={styles.subtitle}>{workout.name}</Text>
 
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Ionicons name="time-outline" size={20} color={colors.accent} />
               <Text style={styles.statValue}>{formatDuration(durationSeconds)}</Text>
-              <Text style={styles.statLabel}>Duration</Text>
+              <Text style={styles.statLabel}>{t('duration')}</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="barbell-outline" size={20} color={colors.accent} />
               <Text style={styles.statValue}>{Math.round(workout.totalVolume).toLocaleString()}</Text>
-              <Text style={styles.statLabel}>Volume (kg)</Text>
+              <Text style={styles.statLabel}>{t('volumeKg')}</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="layers-outline" size={20} color={colors.accent} />
               <Text style={styles.statValue}>{workout.totalSets}</Text>
-              <Text style={styles.statLabel}>Sets</Text>
+              <Text style={styles.statLabel}>{t('sets')}</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="flame-outline" size={20} color={colors.accent} />
               <Text style={styles.statValue}>{calories}</Text>
-              <Text style={styles.statLabel}>Est. Calories</Text>
+              <Text style={styles.statLabel}>{t('estCalories')}</Text>
             </View>
           </View>
 
@@ -150,15 +162,15 @@ export default function FinishWorkoutScreen({ route, navigation }) {
             <View style={styles.prBanner}>
               <Ionicons name="trophy" size={20} color={colors.background} />
               <Text style={styles.prBannerText}>
-                {workout.prCount} Personal Record{workout.prCount > 1 ? 's' : ''} today!
+                {workout.prCount} {workout.prCount > 1 ? t('prs') : t('pr')} {t('today').toLowerCase()}!
               </Text>
             </View>
           )}
 
-          <Text style={styles.sectionLabel}>NOTES</Text>
+          <Text style={styles.sectionLabel}>{t('notes')}</Text>
           <TextInput
             style={styles.notesInput}
-            placeholder="How did it feel? Anything to remember for next time..."
+            placeholder={t('notesPlaceholder')}
             placeholderTextColor={colors.textSecondary}
             value={notes}
             onChangeText={setNotes}
@@ -166,13 +178,13 @@ export default function FinishWorkoutScreen({ route, navigation }) {
             multiline
           />
 
-          <Text style={styles.sectionLabel}>EXERCISES</Text>
+          <Text style={styles.sectionLabel}>{t('exercisesPerformed')}</Text>
           {workout.exercises.map((ex) => (
             <View key={ex.exerciseId} style={styles.exerciseSummaryCard}>
               <Text style={styles.exerciseSummaryName}>{ex.exerciseName}</Text>
               <Text style={styles.exerciseSummaryMeta}>
-                {ex.sets.length} set{ex.sets.length !== 1 ? 's' : ''} ·{' '}
-                {ex.sets.reduce((sum, s) => sum + s.weight * s.reps, 0).toLocaleString()} kg volume
+                {ex.sets.length} {t('sets').toLowerCase()} ·{' '}
+                {ex.sets.reduce((sum, s) => sum + s.weight * s.reps, 0).toLocaleString()} kg {t('volume').toLowerCase()}
               </Text>
             </View>
           ))}
@@ -193,11 +205,11 @@ export default function FinishWorkoutScreen({ route, navigation }) {
 
           <TouchableOpacity style={styles.shareButton} onPress={handleShare} disabled={sharing}>
             <Ionicons name="share-social-outline" size={20} color={colors.accent} />
-            <Text style={styles.shareButtonText}>{sharing ? 'Preparing...' : 'Share Workout Card'}</Text>
+            <Text style={styles.shareButtonText}>{sharing ? t('preparing') : t('shareWorkout')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
-            <Text style={styles.doneButtonText}>Done</Text>
+            <Text style={styles.doneButtonText}>{t('done')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

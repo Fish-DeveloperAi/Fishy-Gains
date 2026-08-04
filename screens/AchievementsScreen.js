@@ -7,12 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { getUnlockedAchievements } from '../database/db';
 import { ACHIEVEMENTS_DATA } from '../constants/achievements';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 60) / 2; // Accommodates padding
 
 export default function AchievementsScreen() {
   const { colors } = useTheme();
+  const { t, hasTranslation } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
   const [unlockedIds, setUnlockedIds] = useState([]);
 
@@ -26,6 +28,12 @@ export default function AchievementsScreen() {
 
   const renderItem = ({ item }) => {
     const isUnlocked = unlockedIds.includes(item.id);
+    // Achievement copy is localised via `<id>_title` / `<id>_desc` keys, with
+    // the English text in constants/achievements.js as the fallback.
+    const titleKey = `${item.id}_title`;
+    const descKey = `${item.id}_desc`;
+    const title = hasTranslation(titleKey) ? t(titleKey) : item.title;
+    const description = hasTranslation(descKey) ? t(descKey) : item.description;
 
     return (
       <View style={[styles.card, !isUnlocked && styles.cardLocked]}>
@@ -41,11 +49,11 @@ export default function AchievementsScreen() {
         </View>
         
         <Text style={[styles.title, !isUnlocked && styles.textLocked]} numberOfLines={1}>
-          {item.title}
+          {title}
         </Text>
         
         <Text style={[styles.description, !isUnlocked && styles.textLocked]}>
-          {isUnlocked ? item.description : 'Keep training to unlock this.'}
+          {isUnlocked ? description : t('keepTrainingToUnlock')}
         </Text>
       </View>
     );
@@ -55,7 +63,7 @@ export default function AchievementsScreen() {
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <View style={styles.header}>
         <Text style={styles.headerSubtitle}>
-          {unlockedIds.length} / {ACHIEVEMENTS_DATA.length} Unlocked
+          {unlockedIds.length} / {ACHIEVEMENTS_DATA.length} {t('unlocked')}
         </Text>
       </View>
 
@@ -83,7 +91,7 @@ const createStyles = (colors) => StyleSheet.create({
     alignItems: 'center',
   },
   headerSubtitle: {
-    color: '#FDE047', // Gold 
+    color: '#FDE047', 
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 1,
@@ -103,7 +111,7 @@ const createStyles = (colors) => StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.3)', // Slight neon aquatic blue border
+    borderColor: 'rgba(56, 189, 248, 0.3)', 
   },
   cardLocked: {
     backgroundColor: colors.background,

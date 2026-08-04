@@ -23,6 +23,7 @@ import {
   getRoutineById,
 } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const DEFAULT_REST_SECONDS = 90;
 
@@ -34,6 +35,7 @@ function formatClock(totalSeconds) {
 
 export default function LogWorkoutScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { workoutId, routineId } = route.params;
@@ -48,7 +50,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
   const [restRemaining, setRestRemaining] = useState(0);
   const [restRunning, setRestRunning] = useState(false);
   const [editingSetId, setEditingSetId] = useState(null);
-  const [routineName, setRoutineName] = useState('Freestyle Workout');
+  const [routineName, setRoutineName] = useState(t('freestyleWorkout'));
 
   const startTimeRef = useRef(Date.now());
   const restEndRef = useRef(null);
@@ -66,9 +68,9 @@ export default function LogWorkoutScreen({ route, navigation }) {
       }));
       setSessionExercises(routineExercises);
     } else {
-      setRoutineName('Freestyle Workout');
+      setRoutineName(t('freestyleWorkout'));
     }
-  }, [routineId]);
+  }, [routineId, t]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -152,11 +154,11 @@ export default function LogWorkoutScreen({ route, navigation }) {
     const weight = parseFloat(weightInput);
     const reps = parseInt(repsInput, 10);
     if (isNaN(weight) || weight < 0) {
-      Alert.alert('Invalid Weight', 'Please enter a valid weight.');
+      Alert.alert(t('invalidWeight'), t('invalidWeightMsg'));
       return;
     }
     if (isNaN(reps) || reps <= 0) {
-      Alert.alert('Invalid Reps', 'Please enter a valid number of reps.');
+      Alert.alert(t('invalidReps'), t('invalidRepsMsg'));
       return;
     }
     if (editingSetId) {
@@ -219,10 +221,10 @@ export default function LogWorkoutScreen({ route, navigation }) {
   };
 
   const handleFinish = () => {
-    Alert.alert('Finish Workout', 'Are you ready to finish this workout?', [
-      { text: 'Keep Going', style: 'cancel' },
+    Alert.alert(t('finishWorkout'), t('finishWorkoutPrompt'), [
+      { text: t('keepGoing'), style: 'cancel' },
       {
-        text: 'Finish',
+        text: t('finish'),
         onPress: () => navigation.replace('FinishWorkout', { workoutId, durationSeconds: elapsedSeconds }),
       },
     ]);
@@ -242,7 +244,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
           </View>
         </View>
         <TouchableOpacity style={styles.finishTopButton} onPress={handleFinish}>
-          <Text style={styles.finishTopButtonText}>Finish</Text>
+          <Text style={styles.finishTopButtonText}>{t('finish')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -272,20 +274,20 @@ export default function LogWorkoutScreen({ route, navigation }) {
           {!currentExercise ? (
             <View style={styles.emptyState}>
               <Ionicons name="barbell-outline" size={40} color={colors.textSecondary} />
-              <Text style={styles.emptyStateText}>No exercises yet</Text>
-              <Text style={styles.emptyStateSubtext}>Add an exercise to start logging sets.</Text>
+              <Text style={styles.emptyStateText}>{t('noExercisesYet')}</Text>
+              <Text style={styles.emptyStateSubtext}>{t('addExerciseToStart')}</Text>
             </View>
           ) : (
             <>
               <Text style={styles.exerciseTitle}>{currentExercise.name}</Text>
               <Text style={styles.exerciseSubtitle}>
-                {currentExercise.muscleGroup} · {currentExercise.category} · Target {currentExercise.targetSets} sets
+                {currentExercise.muscleGroup} · {currentExercise.category} · {t('target')} {currentExercise.targetSets} {t('sets')}
               </Text>
 
               {restRemaining > 0 && (
                 <View style={styles.restCard}>
                   <View style={styles.restHeaderRow}>
-                    <Text style={styles.restLabel}>REST TIMER</Text>
+                    <Text style={styles.restLabel}>{t('restTimer')}</Text>
                     <TouchableOpacity onPress={stopRest}>
                       <Ionicons name="close" size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
@@ -309,10 +311,10 @@ export default function LogWorkoutScreen({ route, navigation }) {
               )}
 
               <View style={styles.setsTableHeader}>
-                <Text style={[styles.setsHeaderCell, { flex: 0.6 }]}>SET</Text>
-                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>PREVIOUS</Text>
-                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>WEIGHT</Text>
-                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>REPS</Text>
+                <Text style={[styles.setsHeaderCell, { flex: 0.6 }]}>{t('set')}</Text>
+                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>{t('previous')}</Text>
+                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>{t('weightKg')}</Text>
+                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>{t('reps')}</Text>
                 <View style={{ width: 30 }} />
               </View>
 
@@ -343,7 +345,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
 
               <View style={styles.inputRow}>
                 <View style={styles.inputBox}>
-                  <Text style={styles.inputLabel}>WEIGHT (KG)</Text>
+                  <Text style={styles.inputLabel}>{t('weightKg')}</Text>
                   <TextInput
                     style={styles.input}
                     keyboardType="decimal-pad"
@@ -354,7 +356,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
                   />
                 </View>
                 <View style={styles.inputBox}>
-                  <Text style={styles.inputLabel}>REPS</Text>
+                  <Text style={styles.inputLabel}>{t('reps')}</Text>
                   <TextInput
                     style={styles.input}
                     keyboardType="number-pad"
@@ -376,7 +378,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
                 }
               >
                 <Ionicons name="add-circle-outline" size={18} color={colors.accent} />
-                <Text style={styles.addExerciseInlineText}>Add Exercise</Text>
+                <Text style={styles.addExerciseInlineText}>{t('addExercise')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -391,7 +393,7 @@ export default function LogWorkoutScreen({ route, navigation }) {
             )}
             <TouchableOpacity style={styles.navButtonPrimary} onPress={goToNextExercise}>
               <Text style={styles.navButtonPrimaryText}>
-                {isLastExercise ? 'Finish Workout' : 'Next Exercise'}
+                {isLastExercise ? t('finishWorkout') : t('nextExercise')}
               </Text>
               <Ionicons name={isLastExercise ? 'checkmark-circle' : 'chevron-forward'} size={20} color={colors.background} />
             </TouchableOpacity>
@@ -404,154 +406,48 @@ export default function LogWorkoutScreen({ route, navigation }) {
 
 const createStyles = (colors) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: colors.background },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 },
   routineName: { color: colors.textPrimary, fontSize: 18, fontWeight: '800', maxWidth: 220 },
   timerRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   timerText: { color: colors.accent, fontSize: 13, fontWeight: '700', marginLeft: 5 },
-  finishTopButton: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    paddingVertical: 9,
-    paddingHorizontal: 16,
-  },
+  finishTopButton: { backgroundColor: colors.card, borderRadius: 14, paddingVertical: 9, paddingHorizontal: 16 },
   finishTopButtonText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
   exerciseTabs: { flexGrow: 0, marginBottom: 8 },
-  exerciseTab: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    marginRight: 8,
-    maxWidth: 160,
-  },
+  exerciseTab: { backgroundColor: colors.card, borderRadius: 16, paddingVertical: 8, paddingHorizontal: 14, marginRight: 8, maxWidth: 160 },
   exerciseTabActive: { backgroundColor: colors.accent },
   exerciseTabText: { color: colors.textSecondary, fontSize: 12, fontWeight: '700' },
   exerciseTabTextActive: { color: colors.background },
   scrollContent: { padding: 20, paddingBottom: 20 },
   exerciseTitle: { color: colors.textPrimary, fontSize: 22, fontWeight: '800' },
   exerciseSubtitle: { color: colors.textSecondary, fontSize: 12, fontWeight: '600', marginTop: 4, marginBottom: 16 },
-  restCard: {
-    backgroundColor: colors.card,
-    borderRadius: 20,
-    padding: 18,
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  restHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 4,
-  },
+  restCard: { backgroundColor: colors.card, borderRadius: 20, padding: 18, alignItems: 'center', marginBottom: 20 },
+  restHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 4 },
   restLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 1 },
   restClock: { color: colors.textPrimary, fontSize: 40, fontWeight: '800', marginVertical: 6 },
-  restProgressTrack: {
-    width: '100%',
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.cardAlt,
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
+  restProgressTrack: { width: '100%', height: 6, borderRadius: 3, backgroundColor: colors.cardAlt, overflow: 'hidden', marginBottom: 14 },
   restProgressFill: { height: '100%', backgroundColor: colors.accent, borderRadius: 3 },
   restControlsRow: { flexDirection: 'row', alignItems: 'center' },
-  restControlButton: {
-    backgroundColor: colors.cardAlt,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    marginHorizontal: 8,
-  },
+  restControlButton: { backgroundColor: colors.cardAlt, borderRadius: 14, paddingVertical: 10, paddingHorizontal: 18, marginHorizontal: 8 },
   restControlText: { color: colors.textPrimary, fontWeight: '700', fontSize: 13 },
-  restControlButtonPrimary: {
-    backgroundColor: colors.accent,
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  restControlButtonPrimary: { backgroundColor: colors.accent, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   setsTableHeader: { flexDirection: 'row', marginBottom: 8, paddingHorizontal: 4 },
   setsHeaderCell: { color: colors.textSecondary, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
-  setRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    marginBottom: 8,
-  },
+  setRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.card, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 12, marginBottom: 8 },
   setRowEditing: { borderWidth: 1.5, borderColor: colors.accent },
   setIndexText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
   setCellText: { color: colors.textPrimary, fontSize: 13 },
   inputRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: 8 },
   inputBox: { flex: 1, marginRight: 10 },
   inputLabel: { color: colors.textSecondary, fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginBottom: 6 },
-  input: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    color: colors.textPrimary,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  logButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 16,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addExerciseInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 18,
-    marginTop: 12,
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(0,210,211,0.3)',
-    borderStyle: 'dashed',
-  },
+  input: { backgroundColor: colors.card, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 13, color: colors.textPrimary, fontSize: 16, fontWeight: '700' },
+  logButton: { width: 50, height: 50, borderRadius: 16, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  addExerciseInline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 18, marginTop: 12, backgroundColor: colors.card, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,210,211,0.3)', borderStyle: 'dashed' },
   addExerciseInlineText: { color: colors.accent, fontWeight: '700', fontSize: 14, marginLeft: 6 },
   emptyState: { alignItems: 'center', paddingVertical: 40 },
   emptyStateText: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 12 },
   emptyStateSubtext: { color: colors.textSecondary, fontSize: 13, marginTop: 4, textAlign: 'center' },
-  footer: {
-    flexDirection: 'row',
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(124,141,175,0.15)',
-  },
-  navButtonSecondary: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: colors.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-  navButtonPrimary: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: colors.accent,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 15,
-  },
+  footer: { flexDirection: 'row', padding: 16, borderTopWidth: 1, borderTopColor: 'rgba(124,141,175,0.15)' },
+  navButtonSecondary: { width: 52, height: 52, borderRadius: 16, backgroundColor: colors.card, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  navButtonPrimary: { flex: 1, flexDirection: 'row', backgroundColor: colors.accent, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingVertical: 15 },
   navButtonPrimaryText: { color: colors.background, fontWeight: '800', fontSize: 15, marginRight: 6 },
 });

@@ -7,11 +7,13 @@ import { LineChart } from 'react-native-chart-kit';
 
 import { getExerciseById, getExerciseHistory, getExercisePRs } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const screenWidth = Dimensions.get('window').width;
 
 export default function ExerciseHistoryScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { exerciseId } = route.params;
@@ -23,11 +25,11 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
     const ex = getExerciseById(exerciseId);
     setExercise(ex);
     
-    if (ex) navigation.setOptions({ title: 'Progress' });
+    if (ex) navigation.setOptions({ title: t('progress') });
     
     setHistory(getExerciseHistory(exerciseId));
     setPrs(getExercisePRs(exerciseId));
-  }, [exerciseId, navigation]);
+  }, [exerciseId, navigation, t]);
 
   useFocusEffect(
     useCallback(() => {
@@ -61,9 +63,9 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
 
             {prs.maxWeight > 0 && (
               <View style={styles.pbCard}>
-                <Text style={styles.pbLabel}>PERSONAL BEST</Text>
+                <Text style={styles.pbLabel}>{t('personalBest').toUpperCase()}</Text>
                 <Text style={styles.pbValue}>
-                  {prs.maxWeight}kg <Text style={styles.pbReps}>× {prs.maxWeightReps} reps</Text>
+                  {prs.maxWeight}kg <Text style={styles.pbReps}>× {prs.maxWeightReps} {t('reps').toLowerCase()}</Text>
                 </Text>
               </View>
             )}
@@ -117,7 +119,7 @@ export default function ExerciseHistoryScreen({ route, navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="barbell-outline" size={36} color={colors.textSecondary} />
-            <Text style={styles.emptyStateText}>No history for this exercise yet</Text>
+            <Text style={styles.emptyStateText}>{t('noHistory')}</Text>
           </View>
         }
         renderItem={({ item }) => {

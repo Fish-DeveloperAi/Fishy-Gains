@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, TouchableOpacity, Modal } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 // each rarity has a color now!!!!!
 const RARITY_COLORS = {
@@ -13,11 +14,24 @@ const RARITY_COLORS = {
 
 export default function AchievementModal({ visible, achievement, onClose }) {
   const { colors } = useTheme();
+  const { t, hasTranslation } = useLanguage();
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  // The native Modal must stay mounted while the exit animation plays.
+  // `fadeAnim > 0` never worked: fadeAnim is an Animated.Value, so the
+  // comparison is always false and the modal popped out instantly.
+  const [isMounted, setIsMounted] = useState(false);
+  // Keep the last achievement around so the exit animation isn't blank when
+  // the queue clears it.
+  const [displayed, setDisplayed] = useState(achievement);
+
+  useEffect(() => {
+    if (achievement) setDisplayed(achievement);
+  }, [achievement]);
 
   useEffect(() => {
     if (visible && achievement) {
+      setIsMounted(true);
       // Slide down and fade in
       Animated.parallel([
         Animated.spring(slideAnim, {
@@ -44,17 +58,33 @@ export default function AchievementModal({ visible, achievement, onClose }) {
           duration: 300,
           useNativeDriver: true,
         })
-      ]).start();
+      ]).start(({ finished }) => {
+        if (finished) setIsMounted(false);
+      });
     }
-  }, [visible, achievement]);
+  }, [visible, achievement, fadeAnim, slideAnim]);
 
-  if (!achievement && !visible) return null;
+  if (!isMounted && !visible) return null;
+
+  const current = achievement || displayed;
 
   //  Determine the color dynamically (fallback to the theme accent just in case)
-  const rarityColor = achievement?.rarity ? RARITY_COLORS[achievement.rarity] : colors.accent;
+  const rarityColor = current?.rarity ? RARITY_COLORS[current.rarity] || colors.accent : colors.accent;
+
+  // Dynamically generate translation keys based on the achievement ID.
+  // `t` returns the key itself when nothing matches, so we check first and fall
+  // back to the English copy baked into the achievement definition.
+  const titleKey = current ? `${current.id}_title` : '';
+  const descKey = current ? `${current.id}_desc` : '';
+  const localizedTitle = current
+    ? hasTranslation(titleKey) ? t(titleKey) : current.title
+    : '';
+  const localizedDesc = current
+    ? hasTranslation(descKey) ? t(descKey) : current.description
+    : '';
 
   return (
-    <Modal transparent visible={visible || fadeAnim > 0} animationType="none">
+    <Modal transparent visible={visible || isMounted} animationType="none" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <Animated.View
           style={[
@@ -70,17 +100,17 @@ export default function AchievementModal({ visible, achievement, onClose }) {
           ]}
         >
           <View style={[styles.iconContainer, { backgroundColor: `${rarityColor}20` }]}>
-            <Text style={styles.iconText}>{achievement?.icon}</Text>
+            <Text style={styles.iconText}>{current?.icon}</Text>
           </View>
 
           <View style={styles.textContainer}>
-            <Text style={styles.unlockedText}>Achievement Unlocked!</Text>
+            <Text style={styles.unlockedText}>{t('achievementUnlocked')}</Text>
             {/*  Color coordinate the title text */}
             <Text style={[styles.titleText, { color: rarityColor }]}>
-              {achievement?.title}
+              {localizedTitle}
             </Text>
             <Text style={[styles.descriptionText, { color: colors.textSecondary }]}>
-              {achievement?.description}
+              {localizedDesc}
             </Text>
           </View>
 
@@ -88,7 +118,7 @@ export default function AchievementModal({ visible, achievement, onClose }) {
             style={[styles.button, { backgroundColor: rarityColor }]} 
             onPress={onClose}
           >
-            <Text style={styles.buttonText}>Awesome</Text>
+            <Text style={styles.buttonText}>{t('awesome')}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

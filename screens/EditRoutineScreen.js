@@ -22,9 +22,14 @@ import {
   deleteRoutine,
 } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+// Shared DB-value translator (muscle groups, categories, equipment).
+import { translateValue } from '../utils/i18nKeys';
+
 
 export default function EditRoutineScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { routineId } = route.params;
@@ -53,13 +58,13 @@ export default function EditRoutineScreen({ route, navigation }) {
       ),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation, routineId, routineName, colors]);
+  }, [navigation, routineId, routineName, colors, t]);
 
   const handleDeleteRoutine = () => {
-    Alert.alert('Delete Routine', `Delete "${routineName}"?`, [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('deleteRoutine'), `${t('delete')} "${routineName}"?`, [
+      { text: t('cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: t('delete'),
         style: 'destructive',
         onPress: () => {
           deleteRoutine(routineId);
@@ -128,13 +133,15 @@ export default function EditRoutineScreen({ route, navigation }) {
                 <Ionicons name="pencil" size={16} color={colors.textSecondary} style={{ marginLeft: 8 }} />
               </TouchableOpacity>
             )}
-            <Text style={styles.sectionLabel}>EXERCISES</Text>
+            <Text style={styles.sectionLabel}>
+              {t('exercises')}
+            </Text>
           </View>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="barbell-outline" size={36} color={colors.textSecondary} />
-            <Text style={styles.emptyStateText}>No exercises added yet</Text>
+            <Text style={styles.emptyStateText}>{t('noExercisesAdded')}</Text>
           </View>
         }
         renderItem={({ item, index }) => (
@@ -161,7 +168,9 @@ export default function EditRoutineScreen({ route, navigation }) {
             </View>
             <View style={styles.exerciseInfo}>
               <Text style={styles.exerciseName}>{item.name}</Text>
-              <Text style={styles.exerciseMeta}>{item.muscle_group} · {item.category}</Text>
+              <Text style={styles.exerciseMeta}>
+                {translateValue(item.muscle_group, t)} · {translateValue(item.category, t)}
+              </Text>
             </View>
             <View style={styles.setsStepper}>
               <TouchableOpacity
@@ -192,7 +201,7 @@ export default function EditRoutineScreen({ route, navigation }) {
             onPress={() => navigation.navigate('ExercisePicker', { routineId })}
           >
             <Ionicons name="add-circle" size={20} color={colors.accent} />
-            <Text style={styles.addButtonText}>Add Exercise</Text>
+            <Text style={styles.addButtonText}>{t('addExercise')}</Text>
           </TouchableOpacity>
         }
       />

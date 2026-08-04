@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import exercisesData from '../assets/exercises.json';
+import { getRankForTotal } from '../constants/ranks';
 
 let db = null;
 
@@ -533,26 +534,38 @@ export function getUserGamificationStats(latestWorkoutId) {
   const dbStats = getWorkoutStats();
   const detail = getWorkoutDetail(latestWorkoutId);
   const bigThree = getBigThreeStats();
-  
+
   const setsRow = database.getFirstSync('SELECT COUNT(*) as count FROM sets WHERE completed = 1;');
-  
-  // Basic Rank Logic (Can be adjusted based on Big Three total kg)
-  let currentRank = 'Unranked';
-  if (bigThree.total >= 100) currentRank = 'Plankton';
-  if (bigThree.total >= 300) currentRank = 'Shark';
-  if (bigThree.total >= 500) currentRank = 'Leviathan';
+
+  // Ranks now come from the shared ladder used by OceanRankCard, so the
+  // "Apex Predator" / "Leviathan" achievements unlock at exactly the total
+  // the user sees on the home screen.
+  const currentRank = getRankForTotal(bigThree.total || 0).rank;
+
+  const dailyStreak = getWorkoutStreak();
+  const weeklyStreak = getWeeklyStreak();
+  const sessionVolume = detail ? detail.totalVolume || 0 : 0;
 
   return {
     totalWorkouts: dbStats.totalWorkouts,
-    currentStreak: getWorkoutStreak(),
-    weeklyStreak: getWeeklyStreak(),
-    latestSessionVolume: detail ? detail.totalVolume : 0,
+    // The achievement engine reads `dailyStreak`; `currentStreak` is kept as an
+    // alias so existing UI callers keep working.
+    dailyStreak,
+    currentStreak: dailyStreak,
+    weeklyStreak,
+    sessionVolume,
+    latestSessionVolume: sessionVolume,
+    volume: sessionVolume,
     lifetimeVolume: dbStats.totalVolume,
     lifetimeSets: setsRow ? setsRow.count : 0,
     maxDeadlift: bigThree.deadlift,
     maxSquat: bigThree.squat,
     maxBench: bigThree.bench,
+    bigThreeTotal: bigThree.total,
     rank: currentRank,
+    // Provide empty arrays to prevent .includes() crashes downstream
+    muscleGroups: detail && detail.muscleGroups ? detail.muscleGroups : [],
+    exercises: detail && detail.exercises ? detail.exercises.map(e => e.exerciseName) : []
   };
 }
 

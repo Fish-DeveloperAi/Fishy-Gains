@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function StreakBadge({ streakCount }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
 
   // If they have no streak, you can either hide this component or render a grayed-out 0-day pill.
   // Here we choose to show it so they are encouraged to start one.
@@ -19,7 +21,7 @@ export default function StreakBadge({ streakCount }) {
     ]}>
       <Text style={[styles.icon, !isActive && styles.iconInactive]}>🔥</Text>
       <Text style={[styles.text, { color: isActive ? '#f97316' : colors.textSecondary }]}>
-        {streakCount} {streakCount === 1 ? 'Day' : 'Days'}
+        {streakCount} {streakCount === 1 ? t('day') : t('days')}
       </Text>
     </View>
   );

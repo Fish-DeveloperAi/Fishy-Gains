@@ -17,9 +17,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { getRoutines, createRoutine, deleteRoutine, duplicateRoutine } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+import { translateValue } from '../utils/i18nKeys';
 
 export default function RoutinesScreen({ navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [routines, setRoutines] = useState([]);
@@ -51,17 +54,21 @@ export default function RoutinesScreen({ navigation }) {
   };
 
   const handleDelete = (id, name) => {
-    Alert.alert('Delete Routine', `Delete "${name}"? This cannot be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          deleteRoutine(id);
-          loadRoutines();
+    Alert.alert(
+      t('deleteRoutine'), 
+      `${t('delete')} "${name}"? ${t('deleteRoutineWarning')}`, 
+      [
+        { text: t('cancel'), style: 'cancel' },
+        {
+          text: t('delete'),
+          style: 'destructive',
+          onPress: () => {
+            deleteRoutine(id);
+            loadRoutines();
+          },
         },
-      },
-    ]);
+      ]
+    );
   };
 
   return (
@@ -73,14 +80,14 @@ export default function RoutinesScreen({ navigation }) {
         ListHeaderComponent={
           <TouchableOpacity style={styles.newRoutineButton} onPress={() => setModalVisible(true)}>
             <Ionicons name="add-circle" size={22} color={colors.accent} />
-            <Text style={styles.newRoutineText}>Create New Routine</Text>
+            <Text style={styles.newRoutineText}>{t('createNewRoutine')}</Text>
           </TouchableOpacity>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="clipboard-outline" size={40} color={colors.textSecondary} />
-            <Text style={styles.emptyStateText}>No routines yet</Text>
-            <Text style={styles.emptyStateSubtext}>Create one to start logging fast.</Text>
+            <Text style={styles.emptyStateText}>{t('noRoutinesYet')}</Text>
+            <Text style={styles.emptyStateSubtext}>{t('createOneToStart')}</Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -92,8 +99,8 @@ export default function RoutinesScreen({ navigation }) {
             >
               <Text style={styles.routineName}>{item.name}</Text>
               <Text style={styles.routineMeta}>
-                {item.exerciseCount} exercise{item.exerciseCount !== 1 ? 's' : ''}
-                {item.muscleGroups.length > 0 ? ` · ${item.muscleGroups.join(', ')}` : ''}
+                {item.exerciseCount} {item.exerciseCount !== 1 ? t('exercisesCount').toLowerCase() : t('exercise').toLowerCase()}
+                {item.muscleGroups.length > 0 ? ` · ${item.muscleGroups.map(mg => translateValue(mg, t)).join(', ')}` : ''}
               </Text>
             </TouchableOpacity>
             <View style={styles.routineActions}>
@@ -120,10 +127,10 @@ export default function RoutinesScreen({ navigation }) {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>New Routine</Text>
+            <Text style={styles.modalTitle}>{t('newRoutine')}</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="e.g. Push Day"
+              placeholder={t('egPushDay')}
               placeholderTextColor={colors.textSecondary}
               value={newRoutineName}
               onChangeText={setNewRoutineName}
@@ -139,10 +146,10 @@ export default function RoutinesScreen({ navigation }) {
                   setModalVisible(false);
                 }}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>{t('cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalCreateButton} onPress={handleCreateRoutine}>
-                <Text style={styles.modalCreateText}>Create</Text>
+                <Text style={styles.modalCreateText}>{t('create')}</Text>
               </TouchableOpacity>
             </View>
           </View>
