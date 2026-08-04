@@ -88,7 +88,7 @@ export default function SettingsScreen({ navigation }) {
   );
 }
 
-// Styles remain completely unchanged
+// Styles for SettingsScreen
 const createStyles = (COLORS) => StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: COLORS.background },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(124,141,175,0.15)' },
