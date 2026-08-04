@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, memo } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,11 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  Image,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 
 import { getExercises, getMuscleGroups, addExerciseToRoutine } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
@@ -22,30 +22,59 @@ const capitalize = (str) => {
   return str.replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-const ExerciseImage = ({ item, colors, styles }) => {
-  const [hasError, setHasError] = useState(false);
+// 1. MEMOIZED ROW COMPONENT
+const ExerciseRow = memo(({ item, selected, colors, styles, onToggle }) => {
+  const [imageFailed, setImageFailed] = useState(false);
 
+  const primaryMuscle = item.muscle_group || (item.primaryMuscles ? item.primaryMuscles[0] : 'Other');
+  const equipment = item.equipment || item.category || 'None';
+  const metaText = `${capitalize(primaryMuscle)} · ${capitalize(equipment)}`;
+  
+  // Safely encode the URL to handle spaces and special characters
+  const rawUrl = item.image ? `${IMAGE_BASE_URL}${item.image}` : null;
+  const imageUrl = rawUrl ? encodeURI(rawUrl) : null;
+
+  // FlatList recycles components. We must reset the error state when the item changes!
   useEffect(() => {
-    setHasError(false);
-  }, [item.image]);
-
-  let imageUrl = null;
-  if (item.image) {
-    imageUrl = `${IMAGE_BASE_URL}${item.image}`;
-  }
-
-  if (!imageUrl || hasError) {
-    return <Ionicons name="barbell" size={24} color={colors.accent} />;
-  }
+    setImageFailed(false);
+  }, [imageUrl]);
 
   return (
-    <Image 
-      source={{ uri: imageUrl }} 
-      style={styles.thumbnail} 
-      onError={() => setHasError(true)} 
-    />
+    <TouchableOpacity
+      style={[styles.exerciseRow, selected && styles.exerciseRowSelected]}
+      onPress={() => onToggle(item.id)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.thumbnailContainer}>
+        {imageUrl && !imageFailed ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.thumbnail}
+            contentFit="cover"
+            cachePolicy="disk"
+            transition={300} // Adds a smooth 300ms fade-in
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <Ionicons name="barbell" size={24} color={colors.accent} />
+        )}
+      </View>
+
+      <View style={{ flex: 1, marginLeft: 14 }}>
+        <Text style={styles.exerciseName}>{item.name}</Text>
+        <Text style={styles.exerciseMeta}>{metaText}</Text>
+      </View>
+      
+      <Ionicons
+        name={selected ? 'checkmark-circle' : 'ellipse-outline'}
+        size={24}
+        color={selected ? colors.accent : colors.cardAlt}
+      />
+    </TouchableOpacity>
   );
-};
+}, (prevProps, nextProps) => {
+  return prevProps.selected === nextProps.selected && prevProps.colors === nextProps.colors;
+});
 
 export default function ExercisePickerScreen({ route, navigation }) {
   const { colors } = useTheme();
@@ -53,15 +82,24 @@ export default function ExercisePickerScreen({ route, navigation }) {
 
   const { routineId, returnScreen } = route.params || {};
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedMuscle, setSelectedMuscle] = useState('All');
   const [exercises, setExercises] = useState([]);
   const [muscleGroups, setMuscleGroups] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
 
+  // 2. SEARCH DEBOUNCE
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const loadExercises = useCallback(() => {
-    setExercises(getExercises(searchTerm, selectedMuscle));
+    setExercises(getExercises(debouncedSearch, selectedMuscle));
     setMuscleGroups(['All', ...getMuscleGroups()]);
-  }, [searchTerm, selectedMuscle]);
+  }, [debouncedSearch, selectedMuscle]);
 
   useFocusEffect(
     useCallback(() => {
@@ -71,9 +109,10 @@ export default function ExercisePickerScreen({ route, navigation }) {
 
   const filters = useMemo(() => muscleGroups, [muscleGroups]);
 
-  const toggleSelect = (id) => {
+  // 3. CALLBACK REFERENCE
+  const toggleSelect = useCallback((id) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
+  }, []);
 
   const handleConfirm = () => {
     if (selectedIds.length === 0) return;
@@ -96,6 +135,17 @@ export default function ExercisePickerScreen({ route, navigation }) {
       navigation.goBack();
     }
   };
+
+  // 4. MEMOIZED RENDER ITEM
+  const renderItem = useCallback(({ item }) => (
+    <ExerciseRow 
+      item={item} 
+      selected={selectedIds.includes(item.id)} 
+      colors={colors} 
+      styles={styles} 
+      onToggle={toggleSelect} 
+    />
+  ), [selectedIds, colors, styles, toggleSelect]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -133,41 +183,18 @@ export default function ExercisePickerScreen({ route, navigation }) {
         data={exercises}
         keyExtractor={(item) => String(item.id)}
         contentContainerStyle={styles.listContent}
+        renderItem={renderItem}
+        // 5. LIST OPTIMIZATIONS
+        initialNumToRender={12}
+        maxToRenderPerBatch={12}
+        windowSize={5}
+        removeClippedSubviews={true}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="search-outline" size={36} color={colors.textSecondary} />
             <Text style={styles.emptyStateText}>No exercises found</Text>
           </View>
         }
-        renderItem={({ item }) => {
-          const selected = selectedIds.includes(item.id);
-          const primaryMuscle = item.muscle_group || (item.primaryMuscles ? item.primaryMuscles[0] : 'Other');
-          const equipment = item.equipment || item.category || 'None';
-          const metaText = `${capitalize(primaryMuscle)} · ${capitalize(equipment)}`;
-
-          return (
-            <TouchableOpacity
-              style={[styles.exerciseRow, selected && styles.exerciseRowSelected]}
-              onPress={() => toggleSelect(item.id)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.thumbnailContainer}>
-                <ExerciseImage item={item} colors={colors} styles={styles} />
-              </View>
-
-              <View style={{ flex: 1, marginLeft: 14 }}>
-                <Text style={styles.exerciseName}>{item.name}</Text>
-                <Text style={styles.exerciseMeta}>{metaText}</Text>
-              </View>
-              
-              <Ionicons
-                name={selected ? 'checkmark-circle' : 'ellipse-outline'}
-                size={24}
-                color={selected ? colors.accent : colors.cardAlt}
-              />
-            </TouchableOpacity>
-          );
-        }}
         ListFooterComponent={
           <TouchableOpacity style={styles.newExerciseButton} onPress={() => navigation.navigate('AddExercise')}>
             <Text style={styles.newExerciseText}>+ Add Custom Exercise</Text>
@@ -249,7 +276,6 @@ const createStyles = (colors) => StyleSheet.create({
   thumbnail: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   exerciseName: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
   exerciseMeta: { color: colors.textSecondary, fontSize: 12, marginTop: 4, fontWeight: '500' },

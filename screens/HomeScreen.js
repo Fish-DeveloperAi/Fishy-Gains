@@ -20,6 +20,7 @@ import {
   deleteWorkout,
 } from '../database/db';
 import OceanRankCard from '../components/OceanRankCard';
+import StreakBadge from '../components/StreakBadge'; // <-- Added import
 import { useTheme } from '../theme/ThemeContext';
 
 function formatDuration(seconds) {
@@ -90,17 +91,22 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.greeting}>Welcome back</Text>
             <Text style={styles.appName}>Fishy Gains 🐟</Text>
           </View>
-          <TouchableOpacity style={styles.bodyLogButton} onPress={() => navigation.navigate('BodyLog')}>
-            <Ionicons name="body-outline" size={22} color={colors.accent} />
-          </TouchableOpacity>
+          
+          {/* Header Actions Container */}
+          <View style={styles.headerActions}>
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('Achievements')}>
+              <Ionicons name="trophy-outline" size={22} color={colors.accent} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconButton} onPress={() => navigation.navigate('BodyLog')}>
+              <Ionicons name="body-outline" size={22} color={colors.accent} />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {streak > 0 && (
-          <View style={styles.streakBanner}>
-            <Ionicons name="flame" size={20} color={colors.accent} />
-            <Text style={styles.streakText}>{streak} day streak — keep it going!</Text>
-          </View>
-        )}
+        {/* Replaced old streak banner with new StreakBadge */}
+        <View style={styles.streakWrapper}>
+          <StreakBadge streakCount={streak} />
+        </View>
 
         <OceanRankCard />
 
@@ -241,27 +247,26 @@ const createStyles = (colors) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   greeting: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
   appName: { color: colors.textPrimary, fontSize: 26, fontWeight: '800', marginTop: 2 },
-  bodyLogButton: {
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
     backgroundColor: colors.card,
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 10,
   },
-  streakBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,210,211,0.12)',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 16,
+  streakWrapper: {
+    marginBottom: 20, 
   },
-  streakText: { color: colors.accent, fontWeight: '700', fontSize: 14, marginLeft: 8 },
   statsRow: { flexDirection: 'row', marginBottom: 16 },
   statCard: {
     flex: 1,
