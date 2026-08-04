@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '../theme/ThemeContext';
-import { useLanguage } from '../context/LanguageContext'; // Adjust path if needed
+import { useLanguage } from '../context/LanguageContext';
 
 export default function SettingsScreen({ navigation }) {
   const { colors, activeTheme, THEMES } = useTheme();
