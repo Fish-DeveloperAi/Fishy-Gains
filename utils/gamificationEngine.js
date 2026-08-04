@@ -126,7 +126,10 @@ export const evaluateAchievements = (workout = {}, stats = {}, currentUnlockedId
       case 'early_bird': {
         // Braces added: `const` inside a bare case leaked into sibling cases
         // and threw "Cannot access before initialization" at runtime.
-        const workoutDate = new Date(sessionTimestamp || Date.now());
+        const rawTimestamp = sessionTimestamp || Date.now();
+        const normalizedTimestamp =
+          typeof rawTimestamp === 'string' ? rawTimestamp.replace(' ', 'T') : rawTimestamp;
+        const workoutDate = new Date(normalizedTimestamp);
         isUnlocked = !Number.isNaN(workoutDate.getTime()) && workoutDate.getHours() < 6;
         break;
       }
