@@ -15,12 +15,14 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { addCustomExercise } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const MUSCLE_GROUPS = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core', 'Cardio', 'Full Body'];
 const CATEGORIES = ['Barbell', 'Dumbbell', 'Machine', 'Cable', 'Bodyweight', 'Other'];
 
 export default function AddExerciseScreen({ navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [name, setName] = useState('');
@@ -30,9 +32,10 @@ export default function AddExerciseScreen({ navigation }) {
   const handleSave = () => {
     const trimmed = name.trim();
     if (trimmed.length === 0) {
-      Alert.alert('Name Required', 'Please enter an exercise name.');
+      Alert.alert(t('nameRequired'), t('enterExerciseName'));
       return;
     }
+    // We save the English values to the DB for data consistency
     addCustomExercise(trimmed, muscleGroup, category);
     navigation.goBack();
   };
@@ -41,17 +44,17 @@ export default function AddExerciseScreen({ navigation }) {
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent}>
-          <Text style={styles.label}>EXERCISE NAME</Text>
+          <Text style={styles.label}>{t('exerciseName')}</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Cable Lateral Raise"
+            placeholder={t('egCableLateralRaise')}
             placeholderTextColor={colors.textSecondary}
             value={name}
             onChangeText={setName}
             autoFocus
           />
 
-          <Text style={styles.label}>MUSCLE GROUP</Text>
+          <Text style={styles.label}>{t('muscleGroup')}</Text>
           <View style={styles.chipWrap}>
             {MUSCLE_GROUPS.map((mg) => (
               <TouchableOpacity
@@ -59,12 +62,14 @@ export default function AddExerciseScreen({ navigation }) {
                 style={[styles.chip, muscleGroup === mg && styles.chipActive]}
                 onPress={() => setMuscleGroup(mg)}
               >
-                <Text style={[styles.chipText, muscleGroup === mg && styles.chipTextActive]}>{mg}</Text>
+                <Text style={[styles.chipText, muscleGroup === mg && styles.chipTextActive]}>
+                  {t(mg === 'Full Body' ? 'fullBody' : mg.toLowerCase())}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={styles.label}>EQUIPMENT</Text>
+          <Text style={styles.label}>{t('equipment')}</Text>
           <View style={styles.chipWrap}>
             {CATEGORIES.map((cat) => (
               <TouchableOpacity
@@ -72,14 +77,16 @@ export default function AddExerciseScreen({ navigation }) {
                 style={[styles.chip, category === cat && styles.chipActive]}
                 onPress={() => setCategory(cat)}
               >
-                <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>{cat}</Text>
+                <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
+                  {t(cat.toLowerCase())}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
             <Ionicons name="checkmark-circle" size={20} color={colors.background} />
-            <Text style={styles.saveButtonText}>Save Exercise</Text>
+            <Text style={styles.saveButtonText}>{t('saveExercise')}</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>

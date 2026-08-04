@@ -7,8 +7,12 @@ import { LineChart } from 'react-native-chart-kit';
 
 import { getWorkoutDetail } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+// Shared DB-value translator (muscle groups, categories, equipment).
+import { translateValue } from '../utils/i18nKeys';
 
 const screenWidth = Dimensions.get('window').width;
+
 
 function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
@@ -18,13 +22,14 @@ function formatDuration(seconds) {
   return `${hrs}h ${remMins}m`;
 }
 
-function formatDate(dateString) {
+function formatDate(dateString, locale) {
   const d = new Date(dateString.replace(' ', 'T'));
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
+  return d.toLocaleDateString(locale, { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export default function WorkoutSummaryScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const { t, locale } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { workoutId } = route.params;
@@ -35,16 +40,16 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
       const data = getWorkoutDetail(workoutId);
       setWorkout(data);
       if (data) {
-        navigation.setOptions({ title: 'Workout Summary' });
+        navigation.setOptions({ title: t('workoutSummary') });
       }
-    }, [workoutId, navigation])
+    }, [workoutId, navigation, t])
   );
 
   if (!workout) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.emptyState}>
-          <Text style={styles.emptyStateText}>Loading workout details...</Text>
+          <Text style={styles.emptyStateText}>{t('loadingDetails')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -57,7 +62,7 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
         {/* Header Section */}
         <View style={styles.header}>
           <Text style={styles.workoutName}>{workout.name}</Text>
-          <Text style={styles.workoutDate}>{formatDate(workout.date)}</Text>
+          <Text style={styles.workoutDate}>{formatDate(workout.date, locale)}</Text>
         </View>
 
         {/* Stats Grid */}
@@ -65,26 +70,26 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
           <View style={styles.statBox}>
             <Ionicons name="time-outline" size={20} color={colors.accent} />
             <Text style={styles.statValue}>{formatDuration(workout.duration_seconds)}</Text>
-            <Text style={styles.statLabel}>Duration</Text>
+            <Text style={styles.statLabel}>{t('duration')}</Text>
           </View>
           <View style={styles.statBox}>
             <Ionicons name="barbell-outline" size={20} color={colors.accent} />
             <Text style={styles.statValue}>{Math.round(workout.totalVolume).toLocaleString()} kg</Text>
-            <Text style={styles.statLabel}>Volume</Text>
+            <Text style={styles.statLabel}>{t('volume')}</Text>
           </View>
           <View style={styles.statBox}>
             <Ionicons name="layers-outline" size={20} color={colors.accent} />
             <Text style={styles.statValue}>{workout.totalSets}</Text>
-            <Text style={styles.statLabel}>Sets</Text>
+            <Text style={styles.statLabel}>{t('sets')}</Text>
           </View>
           <View style={styles.statBox}>
             <Ionicons name="trophy-outline" size={20} color={colors.accent} />
             <Text style={styles.statValue}>{workout.prCount}</Text>
-            <Text style={styles.statLabel}>PRs</Text>
+            <Text style={styles.statLabel}>{t('prs')}</Text>
           </View>
         </View>
 
-        <Text style={styles.sectionLabel}>EXERCISES PERFORMED</Text>
+        <Text style={styles.sectionLabel}>{t('exercisesPerformed').toUpperCase()}</Text>
 
         {/* Exercises List */}
         {workout.exercises.map((exercise, index) => {
@@ -106,7 +111,7 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-                  <Text style={styles.exerciseMuscle}>{exercise.muscleGroup}</Text>
+                  <Text style={styles.exerciseMuscle}>{translateValue(exercise.muscleGroup, t)}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
               </TouchableOpacity>
@@ -142,9 +147,9 @@ export default function WorkoutSummaryScreen({ route, navigation }) {
 
               {/* Sets Table */}
               <View style={styles.setsTableHeader}>
-                <Text style={[styles.setsHeaderCell, { flex: 0.5 }]}>SET</Text>
-                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>WEIGHT</Text>
-                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>REPS</Text>
+                <Text style={[styles.setsHeaderCell, { flex: 0.5 }]}>{t('set').toUpperCase()}</Text>
+                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>{t('weight').toUpperCase()}</Text>
+                <Text style={[styles.setsHeaderCell, { flex: 1 }]}>{t('reps').toUpperCase()}</Text>
                 <View style={{ width: 24 }} />
               </View>
 

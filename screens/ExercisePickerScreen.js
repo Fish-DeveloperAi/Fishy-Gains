@@ -14,21 +14,21 @@ import { Image } from 'expo-image';
 
 import { getExercises, getMuscleGroups, addExerciseToRoutine } from '../database/db';
 import { useTheme } from '../theme/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
+// Shared DB-value translator (muscle groups, categories, equipment).
+import { translateValue } from '../utils/i18nKeys';
 
 const IMAGE_BASE_URL = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 
-const capitalize = (str) => {
-  if (!str) return '';
-  return str.replace(/\b\w/g, (char) => char.toUpperCase());
-};
 
-// 1. MEMOIZED ROW COMPONENT
-const ExerciseRow = memo(({ item, selected, colors, styles, onToggle }) => {
+// 1. MEMOIZED ROW COMPONENT (Now receives 't' as a prop)
+const ExerciseRow = memo(({ item, selected, colors, styles, onToggle, t }) => {
   const [imageFailed, setImageFailed] = useState(false);
 
   const primaryMuscle = item.muscle_group || (item.primaryMuscles ? item.primaryMuscles[0] : 'Other');
   const equipment = item.equipment || item.category || 'None';
-  const metaText = `${capitalize(primaryMuscle)} · ${capitalize(equipment)}`;
+  
+  const metaText = `${translateValue(primaryMuscle, t)} · ${translateValue(equipment, t)}`;
   
   // Safely encode the URL to handle spaces and special characters
   const rawUrl = item.image ? `${IMAGE_BASE_URL}${item.image}` : null;
@@ -73,11 +73,12 @@ const ExerciseRow = memo(({ item, selected, colors, styles, onToggle }) => {
     </TouchableOpacity>
   );
 }, (prevProps, nextProps) => {
-  return prevProps.selected === nextProps.selected && prevProps.colors === nextProps.colors;
+  return prevProps.selected === nextProps.selected && prevProps.colors === nextProps.colors && prevProps.t === nextProps.t;
 });
 
 export default function ExercisePickerScreen({ route, navigation }) {
   const { colors } = useTheme();
+  const { t } = useLanguage();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const { routineId, returnScreen } = route.params || {};
@@ -144,8 +145,9 @@ export default function ExercisePickerScreen({ route, navigation }) {
       colors={colors} 
       styles={styles} 
       onToggle={toggleSelect} 
+      t={t}
     />
-  ), [selectedIds, colors, styles, toggleSelect]);
+  ), [selectedIds, colors, styles, toggleSelect, t]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -153,7 +155,7 @@ export default function ExercisePickerScreen({ route, navigation }) {
         <Ionicons name="search" size={18} color={colors.textSecondary} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search exercises..."
+          placeholder={t('searchExercises')}
           placeholderTextColor={colors.textSecondary}
           value={searchTerm}
           onChangeText={setSearchTerm}
@@ -173,7 +175,7 @@ export default function ExercisePickerScreen({ route, navigation }) {
             onPress={() => setSelectedMuscle(item)}
           >
             <Text style={[styles.filterChipText, selectedMuscle === item && styles.filterChipTextActive]}>
-              {item}
+              {item === 'All' ? t('all') : translateValue(item, t)}
             </Text>
           </TouchableOpacity>
         )}
@@ -192,12 +194,12 @@ export default function ExercisePickerScreen({ route, navigation }) {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons name="search-outline" size={36} color={colors.textSecondary} />
-            <Text style={styles.emptyStateText}>No exercises found</Text>
+            <Text style={styles.emptyStateText}>{t('noExercisesFound')}</Text>
           </View>
         }
         ListFooterComponent={
           <TouchableOpacity style={styles.newExerciseButton} onPress={() => navigation.navigate('AddExercise')}>
-            <Text style={styles.newExerciseText}>+ Add Custom Exercise</Text>
+            <Text style={styles.newExerciseText}>+ {t('addCustomExercise')}</Text>
           </TouchableOpacity>
         }
       />
@@ -206,7 +208,7 @@ export default function ExercisePickerScreen({ route, navigation }) {
         <View style={styles.confirmBar}>
           <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
             <Text style={styles.confirmButtonText}>
-              Add {selectedIds.length} Exercise{selectedIds.length > 1 ? 's' : ''}
+              {t('add')} {selectedIds.length} {t('exercises')}
             </Text>
           </TouchableOpacity>
         </View>
