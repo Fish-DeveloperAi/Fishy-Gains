@@ -8,7 +8,7 @@
 
 Fishy Gains is a modern workout tracker built with **React Native** and **Expo**, designed for bodybuilders, powerlifters, and fitness enthusiasts who want a fast, distraction-free training experience.
 
-Featuring a **hybrid exercise library** with over **800 built-in exercises**, workout routines, progress analytics, body tracking, an Ocean Rank progression system, 13 customizable themes, and complete offline functionality, Fishy Gains keeps you focused on training—not internet connectivity.
+Featuring a **hybrid exercise library** with over **800 built-in exercises**, workout routines, progress analytics, body tracking, an Ocean Rank progression system, an 18-achievement gamification system, 13 customizable themes, multilingual support, and complete offline functionality, Fishy Gains keeps you focused on training—not internet connectivity.
 
 [![Download APK](https://img.shields.io/badge/Download-Android_APK-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Fish-DeveloperAi/Fishy-Gains/releases)
 
@@ -130,6 +130,32 @@ A progression system based on your **Big Three Total** (Squat + Bench Press + De
 | 600 kg | 🐳 Orca |
 | 700 kg | 🐋 Sperm Whale |
 | 800 kg+ | 👑 Leviathan |
+
+---
+
+### 🏆 Achievement System
+
+18 unlockable achievements that reward consistency, strength, endurance, and progression throughout your fitness journey, browsable in a dedicated Achievements screen — locked and unlocked.
+
+- **Workout Milestones** — from your first workout up to 100 completed workouts
+- **Consistency & Habits** — streaks, weekly consistency, and early-morning training
+- **Volume & Endurance** — single-workout volume, lifetime volume, total sets, and long sessions
+- **Strength Milestones** — deadlift, squat, and bench press thresholds
+- **Rank Achievements** — tied to Ocean Rank progress
+
+Achievements are grouped into five rarity tiers (Common, Uncommon, Rare, Epic, Legendary), track progress automatically, and trigger an animated unlock popup the moment you earn one.
+
+---
+
+### 🌍 Multilingual Support
+
+Fishy Gains is available in multiple languages, with more planned.
+
+- 🇺🇸 English
+- 🇫🇷 French
+- 🇲🇦 Arabic (with full right-to-left layout support)
+
+Switch languages anytime from the Settings screen. Exercises, muscle groups, achievements, ranks, settings, notifications, and interface elements are all fully localized, including dates and relative timestamps.
 
 ---
 
@@ -272,6 +298,10 @@ Sync workouts and body measurements with Apple Health.
 ### 🤖 Google Fit
 
 Keep your workout history synchronized with Google Fit.
+
+### 🌐 More Languages
+
+Additional language packs beyond English, French, and Arabic.
 
 ### 🎭 More Themes
 
